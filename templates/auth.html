@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FireflyFund Authentication</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/auth.css" />
+  </head>
+  <body data-mode="{{ mode }}">
+    <div class="auth-shell">
+      <header class="auth-topbar">
+        <a class="auth-brand" href="/" aria-label="FireflyFund Home">
+          <img src="/assets/logo" alt="FireflyFund logo" />
+          <div>
+            <strong>FireflyFund</strong>
+          </div>
+        </a>
+        <nav class="auth-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/#transparency">Transparency</a>
+          <a href="/#campaigns">Projects</a>
+        </nav>
+        <div class="auth-header-spacer" aria-hidden="true"></div>
+      </header>
+    </div>
+
+    <main class="auth-stage">
+      <section class="auth-visual" aria-hidden="true">
+        <img src="/assets/login" alt="" />
+        <div class="visual-overlay"></div>
+      </section>
+
+      <section class="auth-card-wrap">
+        <div class="auth-card">
+          <div class="auth-tabs" role="tablist" aria-label="Authentication tabs">
+            <button
+              class="auth-tab{% if mode in ['login', 'forgot', 'reset'] %} is-active{% endif %}"
+              type="button"
+              data-switch="login"
+            >
+              Login
+            </button>
+            <button
+              class="auth-tab{% if mode == 'register' %} is-active{% endif %}"
+              type="button"
+              data-switch="register"
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <p class="auth-message" id="auth-message"></p>
+
+          <form class="auth-form{% if mode != 'login' %} is-hidden{% endif %}" id="login-form">
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" placeholder="Enter your email" required />
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input type="password" name="password" placeholder="Enter your password" required />
+            </label>
+            <button class="primary-submit" type="submit">Login</button>
+            <div class="auth-footer-line auth-footer-split">
+              <button class="text-button" type="button" data-switch="forgot">Forgot password?</button>
+              <div class="auth-inline-actions">
+              <span>New to FireflyFund?</span>
+              <button class="text-button" type="button" data-switch="register">Create account</button>
+              </div>
+            </div>
+          </form>
+
+          <form class="auth-form{% if mode != 'register' %} is-hidden{% endif %}" id="register-form">
+            <label class="field">
+              <span>Username</span>
+              <input type="text" name="username" placeholder="Choose a username" required />
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" placeholder="Enter your email" required />
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input type="password" name="password" placeholder="Create a password" required />
+            </label>
+            <div class="verification-row">
+              <label class="field code-field">
+                <span>Verification Code</span>
+                <input type="text" name="code" placeholder="6-digit code" maxlength="6" required />
+              </label>
+              <button class="secondary-submit" type="button" id="send-code-button">
+                Send Code
+              </button>
+            </div>
+            <button class="primary-submit" type="submit">Sign Up</button>
+            <div class="auth-footer-line">
+              <span>Already have an account?</span>
+              <button class="text-button" type="button" data-switch="login">Sign in</button>
+            </div>
+          </form>
+
+          <form class="auth-form{% if mode != 'forgot' %} is-hidden{% endif %}" id="forgot-form">
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" placeholder="Enter your account email" required />
+            </label>
+            <div class="verification-row">
+              <label class="field code-field">
+                <span>Reset Code</span>
+                <input type="text" name="code" placeholder="6-digit code" maxlength="6" required />
+              </label>
+              <button class="secondary-submit" type="button" id="send-reset-code-button">
+                Send Code
+              </button>
+            </div>
+            <button class="primary-submit" type="submit">Verify Code</button>
+            <div class="auth-footer-line">
+              <span>Remembered your password?</span>
+              <button class="text-button" type="button" data-switch="login">Back to login</button>
+            </div>
+          </form>
+
+          <form class="auth-form{% if mode != 'reset' %} is-hidden{% endif %}" id="reset-form">
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" placeholder="Enter your account email" required />
+            </label>
+            <label class="field">
+              <span>Reset Code</span>
+              <input type="text" name="code" placeholder="Enter your verified code" maxlength="6" required />
+            </label>
+            <label class="field">
+              <span>New Password</span>
+              <input type="password" name="password" placeholder="Create a new password" required />
+            </label>
+            <button class="primary-submit" type="submit">Update Password</button>
+            <div class="auth-footer-line">
+              <span>Need a new code?</span>
+              <button class="text-button" type="button" data-switch="forgot">Back to code step</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/auth.js"></script>
+  </body>
+</html>

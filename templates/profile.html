@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/#transparency">Transparency</a>
+          <a href="/#campaigns">Projects</a>
+        </nav>
+        <div class="header-spacer" aria-hidden="true"></div>
+      </header>
+
+      <main class="account-page">
+        <section class="account-card">
+          <div class="account-card-head">
+            <div>
+              <p class="eyebrow">Profile</p>
+              <h1>{{ username }}</h1>
+              <p class="account-subtitle">
+                ViewProfile, EditUsername, and EditContactDetails from the BCE flow are handled here.
+              </p>
+            </div>
+          </div>
+
+          <p class="account-message" id="profile-message"></p>
+
+          <form class="account-form" id="profile-form">
+            <label class="account-field">
+              <span>Username</span>
+              <input type="text" name="username" value="{{ username }}" required />
+            </label>
+
+            <label class="account-field">
+              <span>Email</span>
+              <input type="email" name="email" value="{{ user_email }}" readonly />
+            </label>
+
+            <label class="account-field">
+              <span>Contact Details</span>
+              <textarea
+                name="contact_details"
+                rows="6"
+                placeholder="Add contact details, fundraising coordination notes, or preferred contact information."
+              >{{ contact_details }}</textarea>
+            </label>
+
+            <div class="account-actions">
+              <button class="solid-button" type="submit">Save Profile</button>
+              <a class="ghost-button" href="/">Back Home</a>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/site.js"></script>
+  </body>
+</html>

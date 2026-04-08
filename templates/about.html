@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Us | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/#transparency">Transparency</a>
+          <a href="/#campaigns">Projects</a>
+        </nav>
+        <div class="header-actions">
+          {% if user_email %}
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+          {% else %}
+          <a class="ghost-button" href="/auth?mode=login">Login</a>
+          <a class="solid-button" href="/auth?mode=register">Sign Up</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <main class="about-page">
+        <section class="about-hero">
+          <img src="/assets/about" alt="FireflyFund about us banner" />
+          <div class="about-hero-overlay">
+            <div class="about-hero-copy">
+              <p class="eyebrow light">About FireflyFund</p>
+              <h1>Building trust-centered fundraising for communities that need sustained support.</h1>
+            </div>
+          </div>
+        </section>
+
+        <nav class="about-subnav" aria-label="About page sections">
+          <a href="#project-overview">Project Overview</a>
+          <a href="#vision-mission">Vision & Mission</a>
+          <a href="#team-members">Team Members</a>
+          <a href="#project-values">Project Values</a>
+        </nav>
+
+        <section class="about-section" id="project-overview">
+          <div class="about-section-head">
+            <p class="eyebrow">Project Overview</p>
+            <h2>A clear introduction space for your platform background and public-facing summary.</h2>
+          </div>
+          <div class="about-section-body">
+            <p>
+              This section is reserved for the core introduction to FireflyFund:
+              why the platform was created, which fundraising problems it aims
+              to solve, and how it helps connect donors, campaigns, and public
+              transparency in one place.
+            </p>
+          </div>
+        </section>
+
+        <section class="about-section alt" id="vision-mission">
+          <div class="about-section-head">
+            <p class="eyebrow">Vision & Mission</p>
+            <h2>State the long-term direction of the project and the mission that drives daily work.</h2>
+          </div>
+          <div class="about-section-body split">
+            <article class="about-panel">
+              <h3>Vision</h3>
+              <p>
+                Use this area to define the future FireflyFund wants to help
+                create, such as a more transparent, accessible, and trusted
+                environment for public-interest fundraising.
+              </p>
+            </article>
+            <article class="about-panel">
+              <h3>Mission</h3>
+              <p>
+                Use this area to explain the practical mission of the platform,
+                including how campaigns are presented, how trust is strengthened,
+                and how communities benefit from better donor engagement.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="about-section" id="team-members">
+          <div class="about-section-head">
+            <p class="eyebrow">Team Members</p>
+            <h2>Meet the people shaping the project direction, product delivery, and platform trust.</h2>
+          </div>
+          <div class="about-team-showcase">
+            <button
+              class="team-member-card"
+              type="button"
+              data-member-name="Yang YuHao"
+              data-member-name-zh="杨钰豪"
+              data-member-role="Project Lead"
+              data-member-summary="Coordinates the overall platform direction, aligns product decisions with transparency goals, and drives the integration of fundraising, trust, and account workflows."
+              data-member-photo="/assets/yyh1"
+            >
+              <div class="team-member-photo">
+                <img src="/assets/yyh1" alt="Yang YuHao portrait" />
+              </div>
+              <div class="team-member-accent"></div>
+              <div class="team-member-info">
+                <h3>Yang YuHao</h3>
+                <p>Project Lead</p>
+              </div>
+            </button>
+
+            <button
+              class="team-member-card"
+              type="button"
+              data-member-name="Sun GanYu"
+              data-member-name-zh="孙甘雨"
+              data-member-role="Product Design"
+              data-member-summary="Owns interaction patterns, visual consistency, content hierarchy, and usability direction across the public-facing fundraising experience."
+              data-member-photo="/assets/sgy"
+            >
+              <div class="team-member-photo">
+                <img src="/assets/sgy" alt="Sun GanYu portrait" />
+              </div>
+              <div class="team-member-accent"></div>
+              <div class="team-member-info">
+                <h3>Sun GanYu</h3>
+                <p>Product Design</p>
+              </div>
+            </button>
+
+            <button
+              class="team-member-card"
+              type="button"
+              data-member-name="Xu HaoYang"
+              data-member-name-zh="徐皓洋"
+              data-member-role="Backend Engineering"
+              data-member-summary="Builds the FastAPI backend, account system, verification flows, and future service integrations with secure, maintainable implementation."
+              data-member-photo="/assets/xhy"
+            >
+              <div class="team-member-photo">
+                <img src="/assets/xhy" alt="Xu HaoYang portrait" />
+              </div>
+              <div class="team-member-accent"></div>
+              <div class="team-member-info">
+                <h3>Xu HaoYang</h3>
+                <p>Backend Engineering</p>
+              </div>
+            </button>
+
+            <button
+              class="team-member-card"
+              type="button"
+              data-member-name="Xu WeiBin"
+              data-member-name-zh="许炜彬"
+              data-member-role="Operations & Outreach"
+              data-member-summary="Focuses on project communication, stakeholder coordination, campaign readiness, and long-term operational support for the platform."
+              data-member-photo="/assets/xwb"
+            >
+              <div class="team-member-photo">
+                <img src="/assets/xwb" alt="Xu WeiBin portrait" />
+              </div>
+              <div class="team-member-accent"></div>
+              <div class="team-member-info">
+                <h3>Xu WeiBin</h3>
+                <p>Operations & Outreach</p>
+              </div>
+            </button>
+
+            <button
+              class="team-member-card"
+              type="button"
+              data-member-name="Zhao QiHeng"
+              data-member-name-zh="赵启恒"
+              data-member-role="Frontend Engineering"
+              data-member-summary="Focuses on interaction implementation, responsive page behavior, and the refinement of public-facing user experience across the platform."
+              data-member-photo="/assets/zqh1"
+            >
+              <div class="team-member-photo">
+                <img src="/assets/zqh1" alt="Zhao QiHeng portrait" />
+              </div>
+              <div class="team-member-accent"></div>
+              <div class="team-member-info">
+                <h3>Zhao QiHeng</h3>
+                <p>Frontend Engineering</p>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        <section class="about-section alt" id="project-values">
+          <div class="about-section-head">
+            <p class="eyebrow">Project Values</p>
+            <h2>Reserve dedicated space for the principles that shape the product and organization.</h2>
+          </div>
+          <div class="about-values-grid">
+            <article class="about-value-card">
+              <h3>Transparency</h3>
+              <p>Explain how openness, disclosure, and accountability are built into platform decisions.</p>
+            </article>
+            <article class="about-value-card">
+              <h3>Empathy</h3>
+              <p>Describe how donor journeys and beneficiary stories are handled with care and respect.</p>
+            </article>
+            <article class="about-value-card">
+              <h3>Responsibility</h3>
+              <p>Show how the project takes ownership of trust, safety, and long-term platform quality.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="team-modal" id="team-modal" hidden>
+      <div class="team-modal-backdrop" data-close-modal="true"></div>
+      <div class="team-modal-panel" role="dialog" aria-modal="true" aria-labelledby="team-modal-name">
+        <button class="team-modal-close" type="button" aria-label="Close team member details" data-close-modal="true">
+          ×
+        </button>
+        <div class="team-modal-layout">
+          <div class="team-modal-photo" id="team-modal-photo">
+            <img src="/assets/yyh" alt="Team member portrait" id="team-modal-photo-image" />
+          </div>
+          <div class="team-modal-content">
+            <div class="team-modal-name-row">
+              <h2 id="team-modal-name">Member Name</h2>
+              <span class="team-modal-name-zh" id="team-modal-name-zh">成员姓名</span>
+            </div>
+            <p class="team-modal-role" id="team-modal-role">Role</p>
+            <div class="team-modal-divider"></div>
+            <p class="team-modal-summary" id="team-modal-summary">
+              Team member summary will appear here.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/site.js"></script>
+  </body>
+</html>

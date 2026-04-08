@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/#transparency">Transparency</a>
+          <a href="/#campaigns">Projects</a>
+        </nav>
+        <div class="header-spacer" aria-hidden="true"></div>
+      </header>
+
+      <main class="placeholder-page">
+        <section class="placeholder-card">
+          <p class="eyebrow">{{ title }}</p>
+          <h1>{{ username or "User" }}</h1>
+          <p class="placeholder-text">{{ description }}</p>
+          <a class="solid-button" href="/">Back Home</a>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
