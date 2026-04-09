@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260408-home-avatar-fix-1" />
   </head>
   <body>
     <div class="page-shell">
@@ -37,10 +37,6 @@
           <div class="account-card-head">
             <div>
               <p class="eyebrow">Settings</p>
-              <h1>{{ username }}</h1>
-              <p class="account-subtitle">
-                ChangePasswordPage, ValidationCurrentPassword, ValidateNewPassword, and UpdatePassword are handled here.
-              </p>
             </div>
           </div>
 
@@ -55,6 +51,7 @@
             <label class="account-field">
               <span>New Password</span>
               <input type="password" name="new_password" required />
+              <small class="field-hint">Use at least 6 characters with both letters and numbers.</small>
             </label>
 
             <label class="account-field">
@@ -71,10 +68,7 @@
           <section class="danger-zone">
             <div class="danger-zone-head">
               <p class="eyebrow">Delete Account</p>
-              <h2>Remove this account and clear the current email for registration testing.</h2>
-              <p class="account-subtitle">
-                This follows the same BCE-style controller pattern and requires your current password before deletion.
-              </p>
+              <h2>Delete your account</h2>
             </div>
 
             <p class="account-message" id="delete-account-message"></p>
@@ -94,6 +88,6 @@
       </main>
     </div>
 
-    <script src="/static/site.js"></script>
+    <script src="/static/site.js?v=20260408-home-avatar-fix-1"></script>
   </body>
 </html>

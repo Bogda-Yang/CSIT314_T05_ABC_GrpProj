@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260408-home-avatar-fix-1" />
   </head>
   <body>
     <div class="page-shell">
@@ -33,11 +33,15 @@
           {% if user_email %}
           <div class="user-menu">
             <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
-              <span class="user-avatar" aria-hidden="true">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
                   <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
                 </svg>
+                {% endif %}
               </span>
             </button>
             <div class="user-dropdown" hidden>
@@ -57,8 +61,7 @@
       <main id="top">
         <section class="hero">
           <div class="hero-copy reveal">
-            <p class="eyebrow">Built for person-to-person and family support</p>
-            <h1>Help one person, one family, one urgent need at a time.</h1>
+            <h1>Tiny as a firefly, yet bright enough to light a life.</h1>
             <p class="hero-text">
               FireflyFund is designed for direct human support: medical bills,
               family emergencies, recovery costs, education needs, and other
@@ -341,7 +344,7 @@
         <div class="footer-primary">
           <div>
             <p class="eyebrow">FireflyFund</p>
-            <h2>Personal giving, backed by trust.</h2>
+            <h2>Like fireflies in the dark, every spark can light a life.</h2>
           </div>
           <a class="solid-button light" href="#campaigns">Start Helping</a>
         </div>
@@ -353,19 +356,19 @@
           </div>
           <div>
             <span class="footer-label">Support line</span>
-            <p>+65 6800 3140</p>
+            <p>+65 8652 5219</p>
           </div>
           <div>
             <span class="footer-label">Email</span>
-            <p>hello@fireflyfund.org</p>
+            <p>yangyuhao76@gmail.com</p>
           </div>
           <div>
-            <span class="footer-label">Address</span>
-            <p>120 Robinson Road, Singapore 068913</p>
+            <span class="footer-label">Friendly Link</span>
+            <p><a href="https://www.icrc.org" target="_blank" rel="noreferrer">https://www.icrc.org</a></p>
           </div>
         </div>
       </footer>
     </div>
-    <script src="/static/site.js"></script>
+    <script src="/static/site.js?v=20260408-home-avatar-fix-1"></script>
   </body>
 </html>

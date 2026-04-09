@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260408-profile-center-1" />
   </head>
   <body>
     <div class="page-shell">
@@ -33,18 +33,29 @@
       </header>
 
       <main class="account-page">
-        <section class="account-card">
-          <div class="account-card-head">
-            <div>
-              <p class="eyebrow">Profile</p>
-              <h1>{{ username }}</h1>
-              <p class="account-subtitle">
-                ViewProfile, EditUsername, and EditContactDetails from the BCE flow are handled here.
-              </p>
+        <section class="account-card profile-card">
+          <section class="profile-hero-shell">
+            <section class="profile-hero">
+            <p class="eyebrow">Profile</p>
+            <div class="profile-avatar-panel">
+              <label class="profile-avatar-upload" for="avatar-input" aria-label="Upload profile avatar">
+                <input id="avatar-input" type="file" name="avatar" accept="image/jpeg,image/png,image/webp" hidden />
+                <span class="user-avatar profile-avatar-frame{% if avatar_url %} has-image{% endif %}" id="profile-avatar-frame" aria-hidden="true">
+                  {% if avatar_url %}
+                  <img src="{{ avatar_url }}" alt="{{ username }} avatar" id="profile-avatar-image" />
+                  {% else %}
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                    <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                  </svg>
+                  <img src="" alt="{{ username }} avatar" id="profile-avatar-image" hidden />
+                  {% endif %}
+                </span>
+              </label>
             </div>
-          </div>
-
-          <p class="account-message" id="profile-message"></p>
+            <h1 class="profile-hero-name">{{ username }}</h1>
+            </section>
+          </section>
 
           <form class="account-form" id="profile-form">
             <label class="account-field">
@@ -57,12 +68,35 @@
               <input type="email" name="email" value="{{ user_email }}" readonly />
             </label>
 
+            <div class="account-field-row">
+              <label class="account-field compact-field">
+                <span>Gender</span>
+                <select name="gender">
+                  <option value="" {% if not gender %}selected{% endif %}>Select gender</option>
+                  <option value="Male" {% if gender == "Male" %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if gender == "Female" %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if gender == "Other" %}selected{% endif %}>Other</option>
+                  <option value="Prefer not to say" {% if gender == "Prefer not to say" %}selected{% endif %}>Prefer not to say</option>
+                </select>
+              </label>
+
+              <label class="account-field compact-field">
+                <span>Age</span>
+                <input type="number" name="age" min="0" max="130" value="{{ age if age is not none else '' }}" />
+              </label>
+            </div>
+
             <label class="account-field">
-              <span>Contact Details</span>
+              <span>Occupation</span>
+              <input type="text" name="occupation" value="{{ occupation or '' }}" placeholder="Add your occupation" />
+            </label>
+
+            <label class="account-field">
+              <span>Personal Bio</span>
               <textarea
                 name="contact_details"
                 rows="6"
-                placeholder="Add contact details, fundraising coordination notes, or preferred contact information."
+                placeholder="Write a short personal introduction, background, or anything you want supporters to know about you."
               >{{ contact_details }}</textarea>
             </label>
 
@@ -70,11 +104,13 @@
               <button class="solid-button" type="submit">Save Profile</button>
               <a class="ghost-button" href="/">Back Home</a>
             </div>
+
+            <p class="account-message profile-action-message" id="profile-message"></p>
           </form>
         </section>
       </main>
     </div>
 
-    <script src="/static/site.js"></script>
+    <script src="/static/site.js?v=20260408-profile-center-1"></script>
   </body>
 </html>

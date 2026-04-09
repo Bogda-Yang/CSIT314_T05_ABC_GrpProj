@@ -1,62 +1,135 @@
 # FireflyFund
 
-FireflyFund is now scaffolded as a `Python + FastAPI + Supabase Postgres` project.
+FireflyFund is a `Python + FastAPI + Supabase Postgres` fundraising platform prototype focused on person-to-person and family support.
 
-## Features
+## Current Features
 
-- Home page served by FastAPI with Jinja templates
-- Login page with email and password
-- Register page with username, email, password, and email verification code
-- SMTP-based verification email sending
-- Supabase Postgres storage for users and verification codes
-- Cloud-friendly `DATABASE_URL` configuration for multi-user deployment
+- FastAPI server with Jinja templates and static assets
+- Home page, About Us page, Profile page, and Settings page
+- Email + password login
+- Username + email + password + verification code registration
+- SMTP-based email verification and password reset codes
+- Logout with database-backed session invalidation
+- Profile editing for:
+  - username
+  - gender
+  - age
+  - occupation
+  - personal bio
+- Profile avatar upload with shared display on:
+  - Profile page
+  - Home page user menu
+  - About Us page user menu
+- Password change
+- Delete account
+- Supabase Postgres storage for shared multi-user data
 
-## Project Structure
+## Backend Stack
+
+- `FastAPI`
+- `SQLAlchemy`
+- `Supabase Postgres`
+- `Jinja2`
+- `python-dotenv`
+- `python-multipart`
+- `SMTP`
+
+## Main Files
 
 ```text
 main.py
 templates/
+  index.html
+  about.html
+  auth.html
+  profile.html
+  settings.html
 static/
-login.jpg
-logo0.jpg
+  styles.css
+  auth.css
+  auth.js
+  site.js
+assets/
+  images/
+uploads/
+  avatars/
 requirements.txt
 start.sh
+U1-5_BCE_MAPPING.md
 ```
 
-## Run
+## Environment Variables
 
-1. Create and activate a virtual environment if you want one.
-2. Install dependencies:
+Create a local `.env` file based on `.env.example`.
+
+Required values:
+
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_HOST`
+- `SMTP_PORT`
+
+Example Supabase connection string:
+
+```env
+DATABASE_URL=postgresql+psycopg2://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:6543/postgres
+```
+
+## Run Locally
+
+Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
-3. Create `.env` from `.env.example`, then fill in your values.
-   Required: `DATABASE_URL`, `SECRET_KEY`, and SMTP settings.
-
-4. Start FastAPI:
+Start the project:
 
 ```bash
-uvicorn main:app --reload
+cd /Users/apple/Desktop/CSIT314_T05_ABC_GrpProj
+./start.sh
 ```
 
-5. Open:
+Open:
 
 - `http://127.0.0.1:8000/`
+- `http://127.0.0.1:8000/about`
 - `http://127.0.0.1:8000/auth?mode=login`
 - `http://127.0.0.1:8000/auth?mode=register`
+- `http://127.0.0.1:8000/profile`
+- `http://127.0.0.1:8000/settings`
 
-## Notes
+## Authentication Notes
 
-- `.env.example` is included as a reference template.
-- `.env` is ignored by git.
-- For Gmail SMTP, use an app password rather than your normal mailbox password.
-- The app now loads `.env` automatically on startup.
-- Example Supabase Postgres URL:
+- The app loads `.env` automatically.
+- User login state is backed by `user_sessions` and `authentication_tokens`.
+- On project startup, server-side sessions are cleared, so users must log in again after a restart.
+- Gmail SMTP should use an app password instead of the mailbox login password.
 
-```bash
-postgresql+psycopg2://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:6543/postgres
+## Profile Notes
+
+- `Save Profile` updates username and profile information in one BCE-aligned flow.
+- Avatar uploads are stored in:
+
+```text
+uploads/avatars/
 ```
 
-- This structure is suitable for cloud deployment where multiple users share the same Supabase database.
+- Avatar URLs are served from:
+
+```text
+/user-uploads/<filename>
+```
+
+## BCE Mapping
+
+The current BCE file is here:
+
+- [U1-5_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/U1-5_BCE_MAPPING.md)
+
+## Git Notes
+
+- `.env` is ignored by git.
+- Uploaded avatars and local generated files should be reviewed before committing.

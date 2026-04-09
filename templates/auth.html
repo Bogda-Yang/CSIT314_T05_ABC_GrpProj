@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/auth.css" />
+    <link rel="stylesheet" href="/static/auth.css?v=20260408g" />
   </head>
   <body data-mode="{{ mode }}">
     <div class="auth-shell">
@@ -58,16 +58,16 @@
 
           <p class="auth-message" id="auth-message"></p>
 
-          <form class="auth-form{% if mode != 'login' %} is-hidden{% endif %}" id="login-form">
+          <section class="auth-form{% if mode != 'login' %} is-hidden{% endif %}" id="login-form">
             <label class="field">
               <span>Email</span>
-              <input type="email" name="email" placeholder="Enter your email" required />
+              <input id="login-email" type="text" name="email" placeholder="Enter your email" inputmode="email" autocomplete="email" spellcheck="false" required />
             </label>
             <label class="field">
               <span>Password</span>
-              <input type="password" name="password" placeholder="Enter your password" required />
+              <input id="login-password" type="password" name="password" placeholder="Enter your password" required />
             </label>
-            <button class="primary-submit" type="submit">Login</button>
+            <button class="primary-submit" type="button" id="login-submit-button">Login</button>
             <div class="auth-footer-line auth-footer-split">
               <button class="text-button" type="button" data-switch="forgot">Forgot password?</button>
               <div class="auth-inline-actions">
@@ -75,81 +75,83 @@
               <button class="text-button" type="button" data-switch="register">Create account</button>
               </div>
             </div>
-          </form>
+          </section>
 
-          <form class="auth-form{% if mode != 'register' %} is-hidden{% endif %}" id="register-form">
+          <section class="auth-form{% if mode != 'register' %} is-hidden{% endif %}" id="register-form">
             <label class="field">
               <span>Username</span>
-              <input type="text" name="username" placeholder="Choose a username" required />
+              <input id="register-username" type="text" name="username" placeholder="Choose a username" required />
             </label>
             <label class="field">
               <span>Email</span>
-              <input type="email" name="email" placeholder="Enter your email" required />
+              <input id="register-email" type="text" name="email" placeholder="Enter your email" inputmode="email" autocomplete="email" spellcheck="false" required />
             </label>
             <label class="field">
               <span>Password</span>
-              <input type="password" name="password" placeholder="Create a password" required />
+              <input id="register-password" type="password" name="password" placeholder="Create a password" required />
+              <small class="field-hint">Use at least 6 characters with both letters and numbers.</small>
             </label>
             <div class="verification-row">
               <label class="field code-field">
                 <span>Verification Code</span>
-                <input type="text" name="code" placeholder="6-digit code" maxlength="6" required />
+                <input id="register-code" type="text" name="code" placeholder="6-digit code" maxlength="6" required />
               </label>
               <button class="secondary-submit" type="button" id="send-code-button">
                 Send Code
               </button>
             </div>
-            <button class="primary-submit" type="submit">Sign Up</button>
+            <button class="primary-submit" type="button" id="register-submit-button">Sign Up</button>
             <div class="auth-footer-line">
               <span>Already have an account?</span>
               <button class="text-button" type="button" data-switch="login">Sign in</button>
             </div>
-          </form>
+          </section>
 
-          <form class="auth-form{% if mode != 'forgot' %} is-hidden{% endif %}" id="forgot-form">
+          <section class="auth-form{% if mode != 'forgot' %} is-hidden{% endif %}" id="forgot-form">
             <label class="field">
               <span>Email</span>
-              <input type="email" name="email" placeholder="Enter your account email" required />
+              <input id="forgot-email" type="text" name="email" placeholder="Enter your account email" inputmode="email" autocomplete="email" spellcheck="false" required />
             </label>
             <div class="verification-row">
               <label class="field code-field">
                 <span>Reset Code</span>
-                <input type="text" name="code" placeholder="6-digit code" maxlength="6" required />
+                <input id="forgot-code" type="text" name="code" placeholder="6-digit code" maxlength="6" required />
               </label>
               <button class="secondary-submit" type="button" id="send-reset-code-button">
                 Send Code
               </button>
             </div>
-            <button class="primary-submit" type="submit">Verify Code</button>
+            <button class="primary-submit" type="button" id="forgot-submit-button">Verify Code</button>
             <div class="auth-footer-line">
               <span>Remembered your password?</span>
               <button class="text-button" type="button" data-switch="login">Back to login</button>
             </div>
-          </form>
+          </section>
 
-          <form class="auth-form{% if mode != 'reset' %} is-hidden{% endif %}" id="reset-form">
+          <section class="auth-form{% if mode != 'reset' %} is-hidden{% endif %}" id="reset-form">
             <label class="field">
               <span>Email</span>
-              <input type="email" name="email" placeholder="Enter your account email" required />
+              <input id="reset-email" type="text" name="email" placeholder="Enter your account email" inputmode="email" autocomplete="email" spellcheck="false" required />
             </label>
             <label class="field">
               <span>Reset Code</span>
-              <input type="text" name="code" placeholder="Enter your verified code" maxlength="6" required />
+              <input id="reset-code" type="text" name="code" placeholder="Enter your verified code" maxlength="6" required />
             </label>
             <label class="field">
               <span>New Password</span>
-              <input type="password" name="password" placeholder="Create a new password" required />
+              <input id="reset-password" type="password" name="password" placeholder="Create a new password" required />
+              <small class="field-hint">Use at least 6 characters with both letters and numbers.</small>
             </label>
-            <button class="primary-submit" type="submit">Update Password</button>
+            <button class="primary-submit" type="button" id="reset-submit-button">Update Password</button>
             <div class="auth-footer-line">
               <span>Need a new code?</span>
               <button class="text-button" type="button" data-switch="forgot">Back to code step</button>
             </div>
-          </form>
+          </section>
         </div>
       </section>
     </main>
 
-    <script src="/static/auth.js"></script>
+    <script src="/static/auth.js?v=20260408j"></script>
   </body>
 </html>

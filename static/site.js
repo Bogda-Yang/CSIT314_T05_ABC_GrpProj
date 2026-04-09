@@ -2,6 +2,25 @@ const userMenu = document.querySelector(".user-menu");
 const profileForm = document.querySelector("#profile-form");
 const changePasswordForm = document.querySelector("#change-password-form");
 const deleteAccountForm = document.querySelector("#delete-account-form");
+const avatarInput = document.querySelector("#avatar-input");
+const profileAvatarFrame = document.querySelector("#profile-avatar-frame");
+const profileAvatarImage = document.querySelector("#profile-avatar-image");
+const homeUserAvatar = document.querySelector("#home-user-avatar");
+
+// 校验密码规则：至少 6 位，且同时包含字母和数字
+function validatePasswordPolicy(password) {
+  if (password.length < 6) {
+    return "Password must be at least 6 characters.";
+  }
+
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  if (!hasLetter || !hasDigit) {
+    return "Password must contain both letters and numbers.";
+  }
+
+  return "";
+}
 
 // 打开和关闭右上角用户菜单
 if (userMenu) {
@@ -64,6 +83,61 @@ function setAccountMessage(node, text, type = "") {
   node.className = `account-message ${type}`.trim();
 }
 
+// 统一发送文件上传请求
+async function postFormData(url, formData) {
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(typeof data.detail === "string" ? data.detail : "Request failed.");
+  }
+
+  return data;
+}
+
+// 更新页面中的用户头像显示
+function updateAvatarUi(avatarUrl) {
+  const cacheSafeUrl = avatarUrl ? `${avatarUrl}${avatarUrl.includes("?") ? "&" : "?"}t=${Date.now()}` : "";
+
+  if (profileAvatarFrame) {
+    profileAvatarFrame.classList.toggle("has-image", Boolean(avatarUrl));
+  }
+
+  if (profileAvatarImage) {
+    if (avatarUrl) {
+      profileAvatarImage.src = cacheSafeUrl;
+      profileAvatarImage.hidden = false;
+      profileAvatarImage.removeAttribute("hidden");
+    } else {
+      profileAvatarImage.src = "";
+      profileAvatarImage.hidden = true;
+      profileAvatarImage.setAttribute("hidden", "");
+    }
+  }
+
+  if (homeUserAvatar) {
+    if (avatarUrl) {
+      homeUserAvatar.classList.add("has-image");
+      const existingImage = homeUserAvatar.querySelector("img");
+      const existingSvg = homeUserAvatar.querySelector("svg");
+      if (existingImage) {
+        existingImage.src = cacheSafeUrl;
+      } else {
+        const image = document.createElement("img");
+        image.src = cacheSafeUrl;
+        image.alt = "User avatar";
+        homeUserAvatar.appendChild(image);
+      }
+      if (existingSvg) {
+        existingSvg.style.display = "none";
+      }
+    }
+  }
+}
+
 // 更新个人信息
 if (profileForm) {
   const profileMessage = document.querySelector("#profile-message");
@@ -73,6 +147,9 @@ if (profileForm) {
 
     const payload = {
       username: profileForm.elements.username.value.trim(),
+      gender: profileForm.elements.gender.value.trim(),
+      age: profileForm.elements.age.value ? Number(profileForm.elements.age.value) : null,
+      occupation: profileForm.elements.occupation.value.trim(),
       contact_details: profileForm.elements.contact_details.value.trim(),
     };
 
@@ -80,10 +157,47 @@ if (profileForm) {
       setAccountMessage(profileMessage, "Saving profile...");
       const result = await postJson("/api/profile/update", payload);
       profileForm.elements.username.value = result.profile.username;
+      profileForm.elements.gender.value = result.profile.gender || "";
+      profileForm.elements.age.value = result.profile.age ?? "";
+      profileForm.elements.occupation.value = result.profile.occupation || "";
       profileForm.elements.contact_details.value = result.profile.contact_details;
+      const profileHeroName = document.querySelector(".profile-hero-name");
+      const userDropdownName = document.querySelector(".user-dropdown-name");
+      if (profileHeroName) {
+        profileHeroName.textContent = result.profile.username;
+      }
+      if (userDropdownName) {
+        userDropdownName.textContent = result.profile.username;
+      }
       setAccountMessage(profileMessage, result.message, "success");
     } catch (error) {
       setAccountMessage(profileMessage, error.message, "error");
+    }
+  });
+}
+
+// 上传个人头像
+if (avatarInput) {
+  const profileMessage = document.querySelector("#profile-message");
+
+  avatarInput.addEventListener("change", async () => {
+    const avatarFile = avatarInput.files?.[0];
+    if (!avatarFile) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("avatar", avatarFile);
+
+    try {
+      setAccountMessage(profileMessage, "Uploading avatar...");
+      const result = await postFormData("/api/profile/avatar", formData);
+      updateAvatarUi(result.avatar_url);
+      setAccountMessage(profileMessage, result.message, "success");
+    } catch (error) {
+      setAccountMessage(profileMessage, error.message, "error");
+    } finally {
+      avatarInput.value = "";
     }
   });
 }
@@ -100,6 +214,12 @@ if (changePasswordForm) {
       new_password: changePasswordForm.elements.new_password.value,
       confirm_new_password: changePasswordForm.elements.confirm_new_password.value,
     };
+
+    const passwordError = validatePasswordPolicy(payload.new_password);
+    if (passwordError) {
+      setAccountMessage(settingsMessage, passwordError, "error");
+      return;
+    }
 
     try {
       setAccountMessage(settingsMessage, "Changing password...");

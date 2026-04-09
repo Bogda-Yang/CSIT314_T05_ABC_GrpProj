@@ -237,6 +237,13 @@ button {
   color: var(--text);
 }
 
+.field-hint {
+  margin-top: -2px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .field input {
   height: 48px;
   padding: 0 14px;

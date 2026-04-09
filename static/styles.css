@@ -82,6 +82,14 @@ h3 {
   margin: 0;
 }
 
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .page-shell {
   width: min(calc(100% - 32px), var(--max-width));
   margin: 20px auto 40px;
@@ -225,11 +233,45 @@ h3 {
   background: #f7f2ea;
   border: 1px solid rgba(48, 39, 29, 0.08);
   border-radius: 12px;
+  overflow: hidden;
 }
 
 .user-avatar svg {
   width: 26px;
   height: 26px;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar.has-image svg {
+  display: none;
+}
+
+#home-user-avatar {
+  display: inline-flex !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+  flex: 0 0 42px !important;
+  overflow: hidden !important;
+}
+
+#home-user-avatar img {
+  display: block !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+  object-fit: cover !important;
 }
 
 .user-dropdown {
@@ -709,6 +751,11 @@ section {
   box-shadow: 0 18px 46px rgba(10, 77, 73, 0.25);
 }
 
+.footer-primary h2 {
+  font-size: clamp(1.7rem, 2.6vw, 2.6rem);
+  line-height: 1.14;
+}
+
 .footer-primary {
   padding-bottom: 20px;
   margin-bottom: 20px;
@@ -788,6 +835,73 @@ section {
   font-size: clamp(2.2rem, 4vw, 3.4rem);
 }
 
+.profile-hero-shell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 0 auto 18px;
+}
+
+.profile-hero {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  width: 220px;
+  max-width: 100%;
+  padding-bottom: 10px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.profile-hero .eyebrow {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.profile-avatar-panel {
+  display: grid;
+  justify-items: center;
+  margin: 16px 0 10px;
+  width: 100%;
+}
+
+.profile-avatar-upload {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.profile-avatar-frame {
+  width: 132px;
+  height: 132px;
+  border-radius: 30px;
+  background: rgba(247, 242, 234, 0.9);
+  border: 1px solid rgba(48, 39, 29, 0.1);
+  box-shadow: 0 12px 28px rgba(67, 50, 25, 0.1);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.profile-avatar-upload:hover .profile-avatar-frame {
+  transform: translateY(-2px);
+  border-color: rgba(15, 118, 110, 0.3);
+  box-shadow: 0 16px 34px rgba(15, 118, 110, 0.14);
+}
+
+.profile-avatar-frame svg {
+  width: 58px;
+  height: 58px;
+}
+
+.profile-hero-name {
+  width: 100%;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: clamp(0.9rem, 1.2vw, 1.3rem);
+  line-height: 1.2;
+}
+
 .account-subtitle {
   max-width: 620px;
   color: var(--muted);
@@ -809,6 +923,10 @@ section {
   color: #18794e;
 }
 
+.profile-action-message {
+  margin-top: -2px;
+}
+
 .account-form {
   display: grid;
   gap: 18px;
@@ -819,12 +937,24 @@ section {
   gap: 8px;
 }
 
+.account-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.compact-field {
+  margin: 0;
+}
+
 .account-field span {
   font-weight: 800;
 }
 
 .account-field input,
-.account-field textarea {
+.account-field textarea,
+.account-field select {
   width: 100%;
   padding: 14px 16px;
   font: inherit;
@@ -836,13 +966,19 @@ section {
   resize: vertical;
 }
 
+.account-field input,
+.account-field select {
+  height: 56px;
+}
+
 .account-field input[readonly] {
   color: rgba(30, 29, 26, 0.58);
   background: rgba(247, 242, 234, 0.88);
 }
 
 .account-field input:focus,
-.account-field textarea:focus {
+.account-field textarea:focus,
+.account-field select:focus {
   border-color: rgba(15, 118, 110, 0.35);
   background: white;
   box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.08);
@@ -939,8 +1075,8 @@ section {
 }
 
 .about-hero-copy h1 {
-  font-size: clamp(2.8rem, 5vw, 4.8rem);
-  line-height: 1.05;
+  font-size: clamp(2rem, 3.3vw, 3.2rem);
+  line-height: 1.12;
 }
 
 .about-subnav {
