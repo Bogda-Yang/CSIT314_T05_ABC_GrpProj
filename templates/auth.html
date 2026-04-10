@@ -10,7 +10,40 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/auth.css?v=20260410-auth-error-1" />
+    <script>
+      (function () {
+        const retryPrefix = "fireflyfund-asset-retry";
+        function reloadOnce() {
+          try {
+            const retryKey = `${retryPrefix}:${window.location.pathname}`;
+            if (sessionStorage.getItem(retryKey) === "1") return;
+            sessionStorage.setItem(retryKey, "1");
+          } catch (error) {}
+          const url = new URL(window.location.href);
+          url.searchParams.set("_asset_retry", Date.now().toString());
+          window.location.replace(url.toString());
+        }
+        window.__fireflyReloadOnce = reloadOnce;
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            try {
+              const bg = window.getComputedStyle(document.body).backgroundImage || "";
+              if (!bg || bg === "none") {
+                reloadOnce();
+                return;
+              }
+              sessionStorage.removeItem(`${retryPrefix}:${window.location.pathname}`);
+            } catch (error) {}
+          }, 250);
+        });
+      })();
+    </script>
+    <link
+      id="page-style"
+      rel="stylesheet"
+      href="/static/auth.css?v=20260410-asset-fallback-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    />
   </head>
   <body data-mode="{{ mode }}">
     <div class="auth-shell">
@@ -152,6 +185,9 @@
       </section>
     </main>
 
-    <script src="/static/auth.js?v=20260410-auth-error-1"></script>
+    <script
+      src="/static/auth.js?v=20260410-asset-fallback-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    ></script>
   </body>
 </html>
