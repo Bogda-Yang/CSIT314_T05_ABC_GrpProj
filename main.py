@@ -36,6 +36,7 @@ if not DATABASE_URL:
     raise RuntimeError(
         "DATABASE_URL is required. Configure a Supabase Postgres connection string in .env."
     )
+IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
 
 
 class Base(DeclarativeBase):
@@ -529,6 +530,17 @@ def get_authenticated_user(request: Request, session: Session) -> UserAccount:
 
 def get_template_user_context(request: Request) -> dict[str, str | None]:
     # 获取模板使用的当前登录上下文，仅当数据库会话仍然有效时才返回用户信息
+    if not (
+        request.session.get("user_email")
+        and request.session.get("session_key")
+        and request.session.get("auth_token")
+    ):
+        return {
+            "user_email": None,
+            "username": None,
+            "avatar_url": None,
+        }
+
     with get_session() as session:
         try:
             user_account = get_authenticated_user(request, session)
@@ -1185,6 +1197,11 @@ class DeleteAccountController:
 @app.on_event("startup")
 def startup() -> None:
     # 启动应用并自动建表
+    if IS_RENDER:
+        # Render 免费实例会频繁冷启动，线上环境尽量减少启动阶段的数据库写操作。
+        Base.metadata.create_all(bind=engine)
+        return
+
     with engine.begin() as connection:
         connection.execute(
             text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS avatar_path TEXT")

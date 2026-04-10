@@ -444,6 +444,20 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.feature-photo-card {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.feature-photo-card img {
+  display: block;
+  width: 44px;
+  height: 27px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
 .card-topline,
 .progress-meta,
 .supporter-row,
@@ -602,11 +616,26 @@ section {
 }
 
 .campaign-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 14px 34px rgba(77, 55, 31, 0.08);
+}
+
+.campaign-media {
+  height: 220px;
+  overflow: hidden;
+}
+
+.campaign-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .campaign-visual {
@@ -632,6 +661,9 @@ section {
 }
 
 .campaign-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 20px;
 }
 
@@ -643,6 +675,15 @@ section {
 .campaign-body h3 {
   margin: 12px 0 10px;
   font-size: 1.6rem;
+}
+
+.campaign-body p {
+  margin-bottom: 0;
+}
+
+.campaign-progress {
+  margin-top: auto;
+  padding-top: 18px;
 }
 
 .impact-section {

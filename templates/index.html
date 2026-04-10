@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=20260408-home-avatar-fix-1" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260410-qidao1-size-1" />
   </head>
   <body>
     <div class="page-shell">
@@ -26,8 +26,8 @@
         <nav class="site-nav" aria-label="Primary navigation">
           <a href="#top">Home</a>
           <a href="/about">About Us</a>
-          <a href="#transparency">Transparency</a>
-          <a href="#campaigns">Projects</a>
+          <a href="/transparency">Transparency</a>
+          <a href="/projects">Projects</a>
         </nav>
         <div class="header-actions">
           {% if user_email %}
@@ -68,54 +68,33 @@
               personal fundraising stories that donors can understand and trust.
             </p>
             <div class="hero-actions">
-              <a class="solid-button" href="#campaigns">Support A Family</a>
-              <a class="ghost-button" href="#stories">Read Real Stories</a>
+              <a class="solid-button" href="#campaigns">Support Now</a>
             </div>
             <ul class="hero-metrics" aria-label="Key statistics">
               <li>
-                <strong>12,800+</strong>
-                <span>People and families supported through personal fundraising</span>
+                <strong>830M+</strong>
+                <span>More than 830 million people worldwide live in extreme poverty.</span>
               </li>
               <li>
-                <strong>92,000+</strong>
-                <span>Donors contributed to direct, human-centered causes</span>
+                <strong>1.3B+</strong>
+                <span>Around 1.3 billion people globally live with disabilities or are severely affected by disease.</span>
               </li>
               <li>
-                <strong>4.8/5</strong>
-                <span>Average trust rating from supporters following campaign updates</span>
+                <strong>1B+</strong>
+                <span>About 1 billion people worldwide live with mental health or psychiatric disorders.</span>
               </li>
             </ul>
           </div>
 
           <div class="hero-panel reveal delay-1">
-            <article class="feature-card">
-              <div class="card-topline">
-                <span class="status-pill">Family Medical Campaign</span>
-                <span>72% funded</span>
-              </div>
-              <h2>Help a family cover emergency surgery and recovery costs</h2>
-              <p>
-                Support a household facing hospital bills, post-surgery care,
-                medicine, and transport costs during a difficult recovery period.
-              </p>
-              <div class="progress-block" aria-label="Funding progress">
-                <div class="progress-track">
-                  <span class="progress-fill" style="width: 72%"></span>
-                </div>
-                <div class="progress-meta">
-                  <strong>$14,400 raised</strong>
-                  <span>$20,000 goal</span>
-                </div>
-              </div>
-              <div class="supporter-row">
-                <div class="avatar-group" aria-hidden="true">
-                  <span>A</span>
-                  <span>M</span>
-                  <span>J</span>
-                  <span>+</span>
-                </div>
-                <p>Backed by 186 donors in the last 14 days</p>
-              </div>
+            <article class="feature-card feature-photo-card">
+              <img
+                src="/assets/qidao1"
+                alt="Prayer-themed support image"
+                width="550"
+                height="320"
+                style="width: 550px; height: 320px; min-width: 550px; min-height: 320px; max-width: 550px; max-height: 320px; object-fit: cover;"
+              />
             </article>
 
             <div class="snapshot-grid">
@@ -133,37 +112,26 @@
           </div>
         </section>
 
-        <section class="trust-band reveal delay-2">
-          <div>
-            <span class="mini-label">Trusted giving</span>
-            <p>Designed to feel personal for donors and reassuring for families asking for help.</p>
-          </div>
-          <div class="trust-items">
-            <span>Family Campaigns</span>
-            <span>Medical Help</span>
-            <span>Verified Stories</span>
-            <span>Transparent Updates</span>
-          </div>
-        </section>
-
         <section class="campaign-section" id="campaigns">
           <div class="section-heading reveal">
             <div>
               <p class="eyebrow">Featured campaigns</p>
               <h2>Support individual people and families with clear, immediate needs.</h2>
             </div>
-            <a class="text-link" href="#transparency">How funds are disclosed</a>
           </div>
 
           <div class="campaign-grid">
             <article class="campaign-card reveal">
-              <div class="campaign-visual coral"></div>
+              <div class="campaign-media">
+                <img src="/assets/gtq" alt="Guang Touqiang campaign image" />
+              </div>
               <div class="campaign-body">
-                <span class="campaign-tag">Medical Support</span>
-                <h3>Help cover a child's urgent treatment and hospital stay</h3>
+                <span class="campaign-tag">Emergency Surgery</span>
+                <h3>Help Guang Touqiang regain mobility after a severe forest accident</h3>
                 <p>
-                  Help a family manage surgery fees, medicine, and recovery care
-                  after an unexpected diagnosis.
+                  Guang Touqiang was badly injured while fighting two bears during
+                  a forest expedition and is now paralyzed in both lower limbs. He
+                  urgently needs surgery, rehabilitation, and long-term care support.
                 </p>
                 <div class="campaign-progress">
                   <div class="progress-track compact">
@@ -178,13 +146,16 @@
             </article>
 
             <article class="campaign-card reveal delay-1">
-              <div class="campaign-visual teal"></div>
+              <div class="campaign-media">
+                <img src="/assets/br" alt="Baoer Kechajin campaign image" />
+              </div>
               <div class="campaign-body">
-                <span class="campaign-tag">Family Emergency</span>
-                <h3>Support a family after losing income during a medical crisis</h3>
+                <span class="campaign-tag">Publishing Support</span>
+                <h3>Help Baoer Kechajin publish his writing despite blindness and paralysis</h3>
                 <p>
-                  Cover rent, groceries, transport, and daily living costs while
-                  one parent is unable to work.
+                  Baoer Kechajin has lost his eyesight and lives with full-body
+                  paralysis, yet he still wants to finish and publish his book.
+                  He needs support for editing, printing, and basic living expenses.
                 </p>
                 <div class="campaign-progress">
                   <div class="progress-track compact">
@@ -199,13 +170,16 @@
             </article>
 
             <article class="campaign-card reveal delay-2">
-              <div class="campaign-visual sand"></div>
+              <div class="campaign-media">
+                <img src="/assets/dz" alt="Dingzhen Zhenzhu campaign image" />
+              </div>
               <div class="campaign-body">
-                <span class="campaign-tag">Education & Recovery</span>
-                <h3>Help a student return to school after a family setback</h3>
+                <span class="campaign-tag">Education Access</span>
+                <h3>Help Dingzhen Zhenzhu stay in school despite growing up in a remote mountain area</h3>
                 <p>
-                  Fund school supplies, fees, and short-term family support so a
-                  child can continue learning without interruption.
+                  Dingzhen Zhenzhu is a child from a remote rural region and does
+                  not have enough money for school fees, supplies, and transport.
+                  This campaign helps keep his education within reach.
                 </p>
                 <div class="campaign-progress">
                   <div class="progress-track compact">

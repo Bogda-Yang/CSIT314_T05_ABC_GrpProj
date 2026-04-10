@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260409-nav-pages-1" />
   </head>
   <body>
     <div class="page-shell">
@@ -26,8 +26,8 @@
         <nav class="site-nav" aria-label="Primary navigation">
           <a href="/">Home</a>
           <a href="/about">About Us</a>
-          <a href="/#transparency">Transparency</a>
-          <a href="/#campaigns">Projects</a>
+          <a href="/transparency">Transparency</a>
+          <a href="/projects">Projects</a>
         </nav>
         <div class="header-spacer" aria-hidden="true"></div>
       </header>
@@ -35,7 +35,7 @@
       <main class="placeholder-page">
         <section class="placeholder-card">
           <p class="eyebrow">{{ title }}</p>
-          <h1>{{ username or "User" }}</h1>
+          <h1>{{ title }}</h1>
           <p class="placeholder-text">{{ description }}</p>
           <a class="solid-button" href="/">Back Home</a>
         </section>

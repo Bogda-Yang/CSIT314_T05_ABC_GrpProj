@@ -33,7 +33,11 @@ let debugStep = "";
 
 // 认证页提示信息
 function setMessage(text, type = "") {
-  messageNode.textContent = text;
+  const normalizedText =
+    type === "error" && typeof text === "string" && text && !text.startsWith("Error:")
+      ? `Error: ${text}`
+      : text;
+  messageNode.textContent = normalizedText;
   messageNode.className = `auth-message ${type}`.trim();
 }
 
@@ -53,6 +57,23 @@ function getErrorMessage(error) {
   }
 
   return "Unknown error";
+}
+
+// 统一格式化后端校验文案
+function normalizeValidationMessage(message) {
+  if (typeof message !== "string") {
+    return "";
+  }
+
+  if (message === "Value error, Enter a valid email address.") {
+    return "Please enter a valid email address.";
+  }
+
+  if (message === "Enter a valid email address.") {
+    return "Please enter a valid email address.";
+  }
+
+  return message;
 }
 
 // 捕获未处理前端异常
@@ -114,12 +135,16 @@ async function postJson(url, payload) {
   const data = await response.json();
   if (!response.ok) {
     if (typeof data.detail === "string") {
-      throw new Error(data.detail);
+      throw new Error(normalizeValidationMessage(data.detail));
     }
     if (Array.isArray(data.detail) && data.detail.length > 0) {
       throw new Error(
         data.detail
-          .map((item) => item.msg || item.message)
+          .map((item) =>
+            normalizeValidationMessage(
+              typeof item === "string" ? item : item.msg || item.message
+            )
+          )
           .filter(Boolean)
           .join("; ")
       );
@@ -237,9 +262,12 @@ async function handleRegister() {
 // 发送注册验证码
 async function handleSendCode() {
   try {
+    const username = fields.registerUsername?.value.trim() || "";
     const email = fields.registerEmail?.value.trim() || "";
-    if (!email) {
-      setMessage("Enter your email before requesting a verification code.", "error");
+    const password = fields.registerPassword?.value || "";
+
+    if (!username || !email || !password) {
+      setMessage("Please complete all required information.", "error");
       return;
     }
 

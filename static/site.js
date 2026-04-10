@@ -141,6 +141,36 @@ function updateAvatarUi(avatarUrl) {
 // 更新个人信息
 if (profileForm) {
   const profileMessage = document.querySelector("#profile-message");
+  const usernameInput = profileForm.elements.username;
+  const ageInput = profileForm.elements.age;
+
+  if (usernameInput) {
+    usernameInput.addEventListener("invalid", () => {
+      if (usernameInput.validity.valueMissing) {
+        usernameInput.setCustomValidity("Please fill out this field.");
+      } else {
+        usernameInput.setCustomValidity("");
+      }
+    });
+
+    usernameInput.addEventListener("input", () => {
+      usernameInput.setCustomValidity("");
+    });
+  }
+
+  if (ageInput) {
+    ageInput.addEventListener("invalid", () => {
+      if (ageInput.validity.rangeOverflow) {
+        ageInput.setCustomValidity("Value must be less than or equal to 130.");
+      } else {
+        ageInput.setCustomValidity("");
+      }
+    });
+
+    ageInput.addEventListener("input", () => {
+      ageInput.setCustomValidity("");
+    });
+  }
 
   profileForm.addEventListener("submit", async (event) => {
     event.preventDefault();

@@ -1,170 +1,145 @@
-# CI/CD Evidence Report
+# CI/CD Evidence Report for FireflyFund
 
-## 1. Project
+## 1. Project Overview
 
 - **Project Name**: FireflyFund
 - **Repository**: `Bogda-Yang/CSIT314_T05_ABC_GrpProj`
-- **Application Type**: FastAPI web application
+- **Technology Stack**: FastAPI, SQLAlchemy, Supabase PostgreSQL, JavaScript, Docker
+- **Live Deployment URL**: [https://fireflyfund.onrender.com](https://fireflyfund.onrender.com)
+
+This report presents the final evidence that the FireflyFund project uses an automated **Continuous Integration (CI)** and **Continuous Deployment (CD)** workflow.
 
 ## 2. Objective
 
-This report provides evidence that FireflyFund uses an automated CI/CD workflow.
+The objective of this report is to demonstrate that:
 
-- **Continuous Integration (CI)** is used to automatically validate the code after each push or pull request.
-- **Continuous Deployment (CD)** is used to automatically deploy the latest version of the application after repository updates.
+- code validation is automated through GitHub Actions,
+- deployment is automated through Render,
+- repository updates can trigger deployment updates without manual reconfiguration,
+- the deployed system becomes accessible online after successful pipeline execution.
 
-The purpose of this pipeline is to reduce manual work, improve code quality, and ensure that tested code can be delivered more reliably.
+## 3. CI Implementation
 
-## 3. CI Pipeline Design
+The project uses **GitHub Actions** as its CI platform.  
+The workflow is defined in the repository under:
 
-The project uses **GitHub Actions** for continuous integration.
+- [/.github/workflows/ci.yml](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/.github/workflows/ci.yml)
 
-### CI Workflow File
+The workflow runs automatically on push events to `main` and validates the project by:
 
-- Workflow path: [/.github/workflows/ci.yml](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/.github/workflows/ci.yml)
+1. checking out the repository,
+2. setting up Python 3.11,
+3. installing project dependencies,
+4. compiling backend code with `python -m py_compile main.py`,
+5. setting up Node.js,
+6. checking frontend JavaScript syntax,
+7. building the Docker image.
 
-### CI Trigger Conditions
+## 4. CD Implementation
 
-The workflow runs automatically when:
+The project uses **Render** as its deployment platform.  
+Deployment is configured with:
 
-- code is pushed to `main`,
-- code is pushed to a `codex/*` branch,
-- a pull request is opened against `main`.
+- [/render.yaml](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/render.yaml)
+- [/Dockerfile](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/Dockerfile)
 
-### CI Validation Steps
+Render is connected to the GitHub repository and automatically redeploys the application after new commits are pushed to `main`.
 
-The workflow performs the following automated checks:
+## 5. Evidence
 
-1. Checkout repository source code
-2. Set up Python 3.11
-3. Install project dependencies from `requirements.txt`
-4. Compile backend code with `python -m py_compile main.py`
-5. Set up Node.js
-6. Validate frontend JavaScript syntax with:
-   - `node --check static/auth.js`
-   - `node --check static/site.js`
-7. Build the Docker image using the project `Dockerfile`
+### Figure 1. GitHub Actions workflow file configured in the repository
 
-### CI Evidence Screenshots To Capture
+![Figure 1](/Users/apple/Desktop/1.png)
 
-Please capture the following screenshots after pushing the workflow to GitHub:
+**Explanation:**  
+This figure shows that the CI workflow file `ci.yml` exists inside `.github/workflows/`. This is the configuration that enables automated CI execution in GitHub Actions.
 
-1. **Workflow file in repository**
-   - Open GitHub and show `.github/workflows/ci.yml`
-   - This proves that the CI workflow has been configured
+### Figure 2. GitHub Actions workflow executed successfully
 
-2. **GitHub Actions run list**
-   - Open the `Actions` tab in GitHub
-   - Show the workflow name `FireflyFund CI`
-   - Show that the workflow was triggered automatically after a push
+![Figure 2](/Users/apple/Desktop/2.png)
 
-3. **Successful workflow run details**
-   - Open one completed run
-   - Show all green steps:
-     - Checkout repository
-     - Set up Python
-     - Install dependencies
-     - Compile backend
-     - Set up Node.js
-     - Validate frontend scripts
-     - Build Docker image
+**Explanation:**  
+This figure shows a successful run of the `FireflyFund CI` workflow after a push to the `main` branch. It proves that CI was triggered automatically and completed successfully.
 
-4. **Commit status evidence**
-   - Show a commit or pull request page with a green check mark
-   - This proves that CI is linked to repository activity
+### Figure 3. Render deployment history showing failure, auto-redeployment, and successful live deployment
 
-## 4. CD Pipeline Design
+![Figure 3](/Users/apple/Desktop/3.png)
 
-The project is prepared for deployment using **Render** with automatic deployment enabled from GitHub.
+**Explanation:**  
+This figure shows the Render deployment history. It demonstrates that:
 
-### CD Configuration File
+- an initial deployment failed,
+- a later commit triggered a new deployment automatically,
+- the latest deployment became `live`.
 
-- Deployment config path: [/render.yaml](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/render.yaml)
-- Docker runtime file: [/Dockerfile](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/Dockerfile)
+This is strong evidence of continuous deployment automation and iterative troubleshooting.
 
-### CD Deployment Logic
+### Figure 4. Render service logs confirming successful startup and live service status
 
-The intended deployment flow is:
+![Figure 4](/Users/apple/Desktop/4.png)
 
-1. Push code to GitHub
-2. GitHub stores the latest commit
-3. Render detects repository changes
-4. Render automatically rebuilds and redeploys the application
-5. The live website updates to the newest version
+**Explanation:**  
+This figure shows the Render service logs. The log confirms that the application started successfully and that the service became live at the provided Render URL.
 
-### Required Environment Variables for Deployment
+### Figure 5. Render environment variables configured for deployment
 
-The following variables must be configured in Render:
+![Figure 5](/Users/apple/Desktop/5.png)
 
-- `DATABASE_URL`
-- `SECRET_KEY`
-- `SMTP_USER`
-- `SMTP_PASS`
-- `SMTP_HOST`
-- `SMTP_PORT`
+**Explanation:**  
+This figure shows that the deployment environment variables were configured in Render, including database connection, secret key, and SMTP settings. Sensitive values were appropriately hidden.
 
-### CD Evidence Screenshots To Capture
+### Figure 6. Live FireflyFund application running online after deployment
 
-After linking the repository to Render, please capture:
+![Figure 6](/Users/apple/Desktop/6.png)
 
-1. **Render service dashboard**
-   - Show the service name and repository connection
-   - This proves the deployment target is connected to GitHub
+**Explanation:**  
+This figure shows the FireflyFund website running through the Render deployment URL, demonstrating that the CD pipeline produced a live and accessible web application.
 
-2. **Render environment variables page**
-   - Show that required environment variables are configured
-   - You may blur or hide sensitive values
+## 6. Deployment Troubleshooting Note
 
-3. **Deployment log triggered by a new commit**
-   - Push a small change to GitHub
-   - Open the Render deploy logs
-   - Show that a new deployment started automatically
+During the deployment process, two issues were encountered and resolved:
 
-4. **Successful deployment status**
-   - Show the Render page with status such as `Live`, `Deploy successful`, or equivalent
+1. **Missing dependency issue**
+   - Render initially failed because the package `itsdangerous` was not listed in `requirements.txt`.
+   - After adding the missing dependency and pushing a new commit, Render automatically triggered another deployment.
 
-5. **Live application page**
-   - Open the deployed FireflyFund URL
-   - Show that the latest changes are visible online
+2. **Template rendering compatibility issue**
+   - The deployed environment exposed a template rendering issue related to deployment compatibility.
+   - After adjusting the template response implementation and pushing the fix, GitHub Actions re-ran automatically and Render redeployed the project successfully.
 
-## 5. Suggested Demonstration Procedure
-
-To create clear evidence for your lecturer, use the following sequence:
-
-1. Push the new `.github/workflows/ci.yml` file to GitHub
-2. Open the `Actions` tab and wait for the CI workflow to finish
-3. Capture the CI screenshots listed above
-4. Create or connect a Render web service to this repository
-5. Add the required environment variables in Render
-6. Trigger one more GitHub push
-7. Capture the Render deployment screenshots listed above
-8. Open the live site and capture the final running application screenshot
-
-## 6. Suggested Figure Captions
-
-You may use the following captions in your final report:
-
-- **Figure 1.** GitHub Actions CI workflow file configured for FireflyFund.
-- **Figure 2.** CI workflow triggered automatically after code was pushed to GitHub.
-- **Figure 3.** Successful CI pipeline run with all validation steps completed.
-- **Figure 4.** Render service connected to the FireflyFund GitHub repository.
-- **Figure 5.** Automatic deployment triggered after a repository update.
-- **Figure 6.** Live FireflyFund application after successful deployment.
+This troubleshooting process further demonstrates the value of CI/CD automation, since each correction was revalidated and redeployed through the pipeline.
 
 ## 7. Conclusion
 
-The FireflyFund project is prepared with an automated CI/CD workflow.
+The FireflyFund project successfully demonstrates an automated CI/CD workflow.
 
-- The **CI pipeline** uses GitHub Actions to automatically validate backend code, frontend JavaScript syntax, and Docker build readiness.
-- The **CD pipeline** is configured for automatic deployment through Render after repository updates.
+- **CI** was implemented using GitHub Actions to automatically validate backend compilation, frontend JavaScript syntax, and Docker build readiness.
+- **CD** was implemented using Render to automatically deploy repository updates to a live public URL.
+- The evidence shows that pushes to GitHub triggered both automated CI checks and automated redeployment.
 
-This demonstrates that the project follows an automated software delivery workflow rather than a fully manual process.
+Therefore, the project satisfies the requirement of demonstrating a working CI/CD process with practical deployment evidence.
 
-## 8. Submission Note
+## 8. Deployment Limitation Note
 
-Before submission, replace this line with your actual evidence screenshots and fill in:
+The deployed application currently uses a **Render free instance**.
 
-- screenshot images,
-- deployment URL,
-- test dates,
-- any platform-specific deployment status details.
+This means:
+
+- the service may spin down after inactivity,
+- the first request after inactivity may be slower,
+- temporary gateway errors such as `502 Bad Gateway` may occasionally appear during cold start or recovery.
+
+This behaviour is related to the hosting plan rather than the CI/CD design itself. The automated pipeline remains valid because repository updates still trigger automatic validation and redeployment successfully.
+
+## 9. Final Evidence Summary
+
+The final evidence set includes:
+
+1. GitHub workflow configuration screenshot
+2. GitHub Actions successful run screenshot
+3. Render deployment history screenshot
+4. Render successful log screenshot
+5. Render environment variable screenshot
+6. Live deployed website screenshot
+
+These figures together provide sufficient evidence for both CI and CD in the FireflyFund project.
