@@ -12,6 +12,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -315,6 +316,27 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 USER_AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/user-uploads", StaticFiles(directory=USER_AVATAR_DIR), name="user_uploads")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    # 统一格式化请求参数校验错误
+    messages: list[str] = []
+    for error in exc.errors():
+        message = str(error.get("msg", "")).strip()
+        if message.startswith("Value error, "):
+            message = message.replace("Value error, ", "", 1)
+        if message == "Enter a valid email address.":
+            message = "Please enter a valid email address."
+        if message:
+            messages.append(message)
+
+    if not messages:
+        messages = ["Invalid request data."]
+
+    return JSONResponse(status_code=422, content={"detail": messages})
 
 
 class SendCodePayload(BaseModel):
@@ -1186,8 +1208,9 @@ def home(request: Request) -> HTMLResponse:
     # 首页
     user_context = get_template_user_context(request)
     return templates.TemplateResponse(
-        "index.html",
-        {
+        request=request,
+        name="index.html",
+        context={
             "request": request,
             **user_context,
         },
@@ -1199,9 +1222,42 @@ def about_page(request: Request) -> HTMLResponse:
     # 关于我们页面
     user_context = get_template_user_context(request)
     return templates.TemplateResponse(
-        "about.html",
-        {
+        request=request,
+        name="about.html",
+        context={
             "request": request,
+            **user_context,
+        },
+    )
+
+
+@app.get("/transparency", response_class=HTMLResponse)
+def transparency_page(request: Request) -> HTMLResponse:
+    # 信息公开页面
+    user_context = get_template_user_context(request)
+    return templates.TemplateResponse(
+        request=request,
+        name="placeholder.html",
+        context={
+            "request": request,
+            "title": "Transparency",
+            "description": "Transparency page content is reserved for future updates.",
+            **user_context,
+        },
+    )
+
+
+@app.get("/projects", response_class=HTMLResponse)
+def projects_page(request: Request) -> HTMLResponse:
+    # 公益项目页面
+    user_context = get_template_user_context(request)
+    return templates.TemplateResponse(
+        request=request,
+        name="placeholder.html",
+        context={
+            "request": request,
+            "title": "Projects",
+            "description": "Projects page content is reserved for future updates.",
             **user_context,
         },
     )
@@ -1219,8 +1275,9 @@ def profile_page(request: Request) -> HTMLResponse:
         profile = ProfileController.GetProfile(session, user.id)
 
     return templates.TemplateResponse(
-        "profile.html",
-        {
+        request=request,
+        name="profile.html",
+        context={
             "request": request,
             "title": "Profile",
             "username": profile["username"],
@@ -1246,8 +1303,9 @@ def settings_page(request: Request) -> HTMLResponse:
         profile = ProfileController.GetProfile(session, user.id)
 
     return templates.TemplateResponse(
-        "settings.html",
-        {
+        request=request,
+        name="settings.html",
+        context={
             "request": request,
             "title": "Settings",
             "username": profile["username"],
@@ -1264,8 +1322,9 @@ def auth_page(
     # 登录注册页面
     user_context = get_template_user_context(request)
     return templates.TemplateResponse(
-        "auth.html",
-        {
+        request=request,
+        name="auth.html",
+        context={
             "request": request,
             "mode": mode,
             **user_context,
@@ -1289,6 +1348,11 @@ def asset(asset_name: str) -> FileResponse:
         "logo": image_dir / "logo0.jpg",
         "login": image_dir / "login.jpg",
         "about": image_dir / "aboutus.jpg",
+        "qidao": image_dir / "qidao.jpg",
+        "qidao1": image_dir / "qidao1.jpg",
+        "gtq": image_dir / "gtq.jpg",
+        "br": image_dir / "br.jpg",
+        "dz": image_dir / "dz.jpg",
         "yyh": image_dir / "yyh.jpg",
         "yyh1": image_dir / "yyh1.jpg",
         "sgy": image_dir / "sgy.jpg",
