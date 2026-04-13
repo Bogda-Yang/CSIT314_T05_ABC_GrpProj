@@ -20,9 +20,11 @@ FireflyFund is a `Python + FastAPI + Supabase Postgres` fundraising platform pro
   - Profile page
   - Home page user menu
   - About Us page user menu
+- Campaign image upload with up to 5 images per campaign
 - Password change
 - Delete account
 - Supabase Postgres storage for shared multi-user data
+- Supabase Storage for user avatars and campaign images
 
 ## Backend Stack
 
@@ -66,10 +68,17 @@ Required values:
 
 - `DATABASE_URL`
 - `SECRET_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 - `SMTP_USER`
 - `SMTP_PASS`
 - `SMTP_HOST`
 - `SMTP_PORT`
+
+Optional values:
+
+- `SUPABASE_AVATAR_BUCKET`
+- `SUPABASE_CAMPAIGN_BUCKET`
 
 Example Supabase connection string:
 
@@ -111,17 +120,21 @@ Open:
 ## Profile Notes
 
 - `Save Profile` updates username and profile information in one BCE-aligned flow.
-- Avatar uploads are stored in:
+- Avatar and campaign image uploads use Supabase Storage when `SUPABASE_URL` and
+  `SUPABASE_SERVICE_ROLE_KEY` are configured.
+- Local `uploads/` directories remain as a development fallback when Supabase
+  Storage credentials are not configured.
 
-```text
-uploads/avatars/
-```
+## Render Notes
 
-- Avatar URLs are served from:
-
-```text
-/user-uploads/<filename>
-```
+- To make uploaded avatars and campaign images visible on Render, configure these
+  environment variables in Render:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - optionally `SUPABASE_AVATAR_BUCKET`
+  - optionally `SUPABASE_CAMPAIGN_BUCKET`
+- Existing images uploaded before the Supabase Storage migration may need to be
+  uploaded again, because old local files are not available on Render instances.
 
 ## BCE Mapping
 

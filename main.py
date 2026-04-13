@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import os
 import random
 import re
@@ -9,7 +10,9 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlencode
+from urllib.request import Request as UrlRequest, urlopen
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
@@ -87,6 +90,24 @@ if not DATABASE_URL:
     raise RuntimeError(
         "DATABASE_URL is required. Configure a Supabase Postgres connection string in .env."
     )
+
+
+def infer_supabase_url(database_url: str) -> str:
+    project_match = re.search(r"postgres\.([a-z0-9]+):", database_url, re.IGNORECASE)
+    if not project_match:
+        return ""
+    return f"https://{project_match.group(1).lower()}.supabase.co"
+
+
+SUPABASE_URL = (
+    os.getenv("SUPABASE_URL", "").strip().rstrip("/") or infer_supabase_url(DATABASE_URL)
+)
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+SUPABASE_AVATAR_BUCKET = os.getenv("SUPABASE_AVATAR_BUCKET", "user-avatars").strip() or "user-avatars"
+SUPABASE_CAMPAIGN_BUCKET = (
+    os.getenv("SUPABASE_CAMPAIGN_BUCKET", "campaign-images").strip() or "campaign-images"
+)
+SUPABASE_STORAGE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
 
 
@@ -551,9 +572,9 @@ class CampaignImage(Base):
     def DeleteImageRecords(session: Session, campaign_id: int) -> None:
         image_records = CampaignImage.GetImageDetails(session, campaign_id)
         for record in image_records:
-            image_file_path = CAMPAIGN_IMAGE_DIR / record.image_path
-            if image_file_path.exists():
-                image_file_path.unlink()
+            delete_uploaded_asset(
+                SUPABASE_CAMPAIGN_BUCKET, CAMPAIGN_IMAGE_DIR, record.image_path
+            )
         session.execute(delete(CampaignImage).where(CampaignImage.campaign_id == campaign_id))
 
     @staticmethod
@@ -568,9 +589,9 @@ class CampaignImage(Base):
 
     @staticmethod
     def DeleteImageRecord(session: Session, image_record: "CampaignImage") -> None:
-        image_file_path = CAMPAIGN_IMAGE_DIR / image_record.image_path
-        if image_file_path.exists():
-            image_file_path.unlink()
+        delete_uploaded_asset(
+            SUPABASE_CAMPAIGN_BUCKET, CAMPAIGN_IMAGE_DIR, image_record.image_path
+        )
         session.delete(image_record)
 
 
@@ -844,15 +865,184 @@ def now_dt() -> datetime:
     return datetime.now(SINGAPORE_TZ)
 
 
+class SupabaseStorage:
+    # Supabase Storage 辅助类
+    @staticmethod
+    def IsConfigured() -> bool:
+        return SUPABASE_STORAGE_ENABLED
+
+    @staticmethod
+    def _request(
+        method: str,
+        path: str,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        expected_statuses: tuple[int, ...] = (200,),
+    ) -> bytes:
+        if not SupabaseStorage.IsConfigured():
+            raise RuntimeError("Supabase Storage is not configured.")
+
+        request_headers = {
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        }
+        if headers:
+            request_headers.update(headers)
+
+        request = UrlRequest(
+            f"{SUPABASE_URL}{path}",
+            data=data,
+            headers=request_headers,
+            method=method,
+        )
+        try:
+            with urlopen(request, timeout=20) as response:
+                response_body = response.read()
+                response_status = getattr(response, "status", response.getcode())
+                if response_status not in expected_statuses:
+                    raise RuntimeError(
+                        f"Supabase Storage request failed with status {response_status}."
+                    )
+                return response_body
+        except HTTPError as error:
+            error_body = error.read().decode("utf-8", errors="ignore")
+            if error.code in expected_statuses:
+                return error_body.encode("utf-8")
+            raise RuntimeError(
+                f"Supabase Storage request failed with status {error.code}: {error_body or error.reason}"
+            ) from error
+        except URLError as error:
+            raise RuntimeError(
+                f"Unable to reach Supabase Storage: {error.reason}"
+            ) from error
+
+    @staticmethod
+    def EnsurePublicBucket(bucket_name: str) -> None:
+        payload = json.dumps(
+            {
+                "id": bucket_name,
+                "name": bucket_name,
+                "public": True,
+                "file_size_limit": 5 * 1024 * 1024,
+                "allowed_mime_types": ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+            }
+        ).encode("utf-8")
+        try:
+            SupabaseStorage._request(
+                "POST",
+                "/storage/v1/bucket",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                expected_statuses=(200, 201),
+            )
+        except RuntimeError as error:
+            error_message = str(error).lower()
+            if "already exists" in error_message or "duplicate" in error_message:
+                return
+            if "status 409" in error_message or "bucketid already exists" in error_message:
+                return
+            raise
+
+    @staticmethod
+    def BuildPublicUrl(bucket_name: str, object_path: str) -> str:
+        clean_object_path = normalize_storage_path(object_path)
+        return (
+            f"{SUPABASE_URL}/storage/v1/object/public/"
+            f"{quote(bucket_name)}/{quote(clean_object_path, safe='/')}"
+        )
+
+    @staticmethod
+    def UploadPublicObject(
+        bucket_name: str, object_path: str, file_bytes: bytes, content_type: str
+    ) -> None:
+        clean_object_path = normalize_storage_path(object_path)
+        SupabaseStorage._request(
+            "POST",
+            f"/storage/v1/object/{quote(bucket_name)}/{quote(clean_object_path, safe='/')}",
+            data=file_bytes,
+            headers={
+                "Content-Type": content_type,
+                "x-upsert": "true",
+                "Cache-Control": "3600",
+            },
+            expected_statuses=(200, 201),
+        )
+
+    @staticmethod
+    def DeleteObject(bucket_name: str, object_path: str) -> None:
+        clean_object_path = normalize_storage_path(object_path)
+        try:
+            SupabaseStorage._request(
+                "DELETE",
+                f"/storage/v1/object/{quote(bucket_name)}/{quote(clean_object_path, safe='/')}",
+                expected_statuses=(200, 204, 404),
+            )
+        except RuntimeError as error:
+            if "status 404" in str(error).lower():
+                return
+            raise
+
+
+def normalize_storage_path(stored_path: str) -> str:
+    clean_path = stored_path.strip().replace("\\", "/").lstrip("/")
+    if not clean_path:
+        raise RuntimeError("Storage path cannot be empty.")
+    return clean_path
+
+
+def is_supabase_storage_path(stored_path: str | None) -> bool:
+    return bool(stored_path and "/" in stored_path)
+
+
+def write_local_upload(base_dir: Path, stored_path: str, file_bytes: bytes) -> None:
+    local_file_path = base_dir / normalize_storage_path(stored_path)
+    local_file_path.parent.mkdir(parents=True, exist_ok=True)
+    local_file_path.write_bytes(file_bytes)
+
+
+def delete_local_upload(base_dir: Path, stored_path: str | None) -> None:
+    if not stored_path:
+        return
+    local_file_path = base_dir / normalize_storage_path(stored_path)
+    if local_file_path.exists():
+        local_file_path.unlink()
+
+
+def store_uploaded_asset(
+    bucket_name: str,
+    local_dir: Path,
+    stored_path: str,
+    file_bytes: bytes,
+    content_type: str,
+) -> None:
+    if SupabaseStorage.IsConfigured():
+        SupabaseStorage.UploadPublicObject(bucket_name, stored_path, file_bytes, content_type)
+        return
+    write_local_upload(local_dir, stored_path, file_bytes)
+
+
+def delete_uploaded_asset(bucket_name: str, local_dir: Path, stored_path: str | None) -> None:
+    if not stored_path:
+        return
+    if SupabaseStorage.IsConfigured() and is_supabase_storage_path(stored_path):
+        SupabaseStorage.DeleteObject(bucket_name, stored_path)
+        return
+    delete_local_upload(local_dir, stored_path)
+
+
 def build_avatar_url(avatar_path: str | None) -> str | None:
     if not avatar_path:
         return None
+    if SupabaseStorage.IsConfigured() and is_supabase_storage_path(avatar_path):
+        return SupabaseStorage.BuildPublicUrl(SUPABASE_AVATAR_BUCKET, avatar_path)
     return f"/user-uploads/{avatar_path}"
 
 
 def build_campaign_image_url(image_path: str | None) -> str | None:
     if not image_path:
         return None
+    if SupabaseStorage.IsConfigured() and is_supabase_storage_path(image_path):
+        return SupabaseStorage.BuildPublicUrl(SUPABASE_CAMPAIGN_BUCKET, image_path)
     return f"/campaign-uploads/{image_path}"
 
 
@@ -1609,19 +1799,23 @@ class ProfileController:
         profile = UserProfile.GetProfileDetails(session, user_id)
         old_avatar_path = profile.avatar_path if profile and profile.avatar_path else None
 
-        avatar_filename = f"user_{user_id}_{uuid.uuid4().hex}{file_extension}"
-        avatar_file_path = USER_AVATAR_DIR / avatar_filename
-        avatar_file_path.write_bytes(file_bytes)
+        avatar_filename = f"{uuid.uuid4().hex}{file_extension}"
+        avatar_storage_path = f"users/{user_id}/{avatar_filename}"
+        store_uploaded_asset(
+            SUPABASE_AVATAR_BUCKET,
+            USER_AVATAR_DIR,
+            avatar_storage_path,
+            file_bytes,
+            content_type,
+        )
 
-        UserProfile.UpdateAvatarPath(session, user_id, avatar_filename)
+        UserProfile.UpdateAvatarPath(session, user_id, avatar_storage_path)
         session.commit()
 
         if old_avatar_path:
-            old_file_path = USER_AVATAR_DIR / old_avatar_path
-            if old_file_path.exists():
-                old_file_path.unlink()
+            delete_uploaded_asset(SUPABASE_AVATAR_BUCKET, USER_AVATAR_DIR, old_avatar_path)
 
-        return {"avatar_url": build_avatar_url(avatar_filename) or ""}
+        return {"avatar_url": build_avatar_url(avatar_storage_path) or ""}
 
 
 class PasswordController:
@@ -1796,9 +1990,9 @@ class DeleteAccountController:
         profile = UserProfile.GetProfileDetails(session, user_id)
         if profile:
             if profile.avatar_path:
-                avatar_file_path = USER_AVATAR_DIR / profile.avatar_path
-                if avatar_file_path.exists():
-                    avatar_file_path.unlink()
+                delete_uploaded_asset(
+                    SUPABASE_AVATAR_BUCKET, USER_AVATAR_DIR, profile.avatar_path
+                )
             session.delete(profile)
 
     @staticmethod
@@ -2070,10 +2264,21 @@ class CampaignImageController:
 
         image_paths: list[str] = []
         for file_bytes, file_extension in validated_files:
-            image_filename = f"campaign_{campaign.id}_{uuid.uuid4().hex}{file_extension}"
-            image_file_path = CAMPAIGN_IMAGE_DIR / image_filename
-            image_file_path.write_bytes(file_bytes)
-            image_paths.append(image_filename)
+            image_filename = f"{uuid.uuid4().hex}{file_extension}"
+            image_storage_path = f"campaigns/{campaign.id}/{image_filename}"
+            content_type = {
+                ".jpg": "image/jpeg",
+                ".png": "image/png",
+                ".webp": "image/webp",
+            }.get(file_extension, "application/octet-stream")
+            store_uploaded_asset(
+                SUPABASE_CAMPAIGN_BUCKET,
+                CAMPAIGN_IMAGE_DIR,
+                image_storage_path,
+                file_bytes,
+                content_type,
+            )
+            image_paths.append(image_storage_path)
 
         if campaign.status != "draft":
             campaign.status = "draft"
@@ -2475,6 +2680,13 @@ def serialize_campaign_detail(
 @app.on_event("startup")
 def startup() -> None:
     # 启动应用并自动建表
+    if SupabaseStorage.IsConfigured():
+        try:
+            SupabaseStorage.EnsurePublicBucket(SUPABASE_AVATAR_BUCKET)
+            SupabaseStorage.EnsurePublicBucket(SUPABASE_CAMPAIGN_BUCKET)
+        except RuntimeError as error:
+            print(f"Warning: unable to verify Supabase Storage buckets: {error}")
+
     if IS_RENDER:
         # Render 免费实例会频繁冷启动，线上环境尽量减少启动阶段的数据库写操作。
         Base.metadata.create_all(bind=engine)
