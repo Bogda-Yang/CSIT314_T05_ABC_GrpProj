@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projects | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        const retryPrefix = "fireflyfund-asset-retry";
+        function reloadOnce() {
+          try {
+            const retryKey = `${retryPrefix}:${window.location.pathname}`;
+            if (sessionStorage.getItem(retryKey) === "1") return;
+            sessionStorage.setItem(retryKey, "1");
+          } catch (error) {}
+          const url = new URL(window.location.href);
+          url.searchParams.set("_asset_retry", Date.now().toString());
+          window.location.replace(url.toString());
+        }
+        window.__fireflyReloadOnce = reloadOnce;
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            try {
+              const bg = window.getComputedStyle(document.body).backgroundImage || "";
+              if (!bg || bg === "none") {
+                reloadOnce();
+                return;
+              }
+              sessionStorage.removeItem(`${retryPrefix}:${window.location.pathname}`);
+            } catch (error) {}
+          }, 250);
+        });
+      })();
+    </script>
+    <link
+      id="page-style"
+      rel="stylesheet"
+      href="/static/styles.css?v=20260412-projects-category-overflow-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    />
+  </head>
+  <body class="projects-flat-background">
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/transparency">Transparency</a>
+          <a href="/projects">Projects</a>
+          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
+        </nav>
+        <div class="header-actions">
+          {% if user_email %}
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+          {% else %}
+          <a class="ghost-button" href="/auth?mode=login">Login</a>
+          <a class="solid-button" href="/auth?mode=register">Sign Up</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <main class="projects-page">
+        <section class="projects-category-section" id="project-categories">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Campaign Categories</p>
+            </div>
+          </div>
+          <div class="projects-category-bar" aria-label="Campaign category filters">
+            <div class="projects-category-primary-row">
+            {% for category_filter in primary_category_filters %}
+            <a
+              class="projects-category-chip{% if category_filter.is_active %} is-active{% endif %}"
+              href="{{ category_filter.url }}"
+            >
+              {{ category_filter.label }}
+            </a>
+            {% endfor %}
+            </div>
+            {% if overflow_category_filters %}
+            <details class="projects-category-more">
+              <summary class="projects-category-more-button" aria-label="Show more categories">...</summary>
+              <div class="projects-category-more-menu">
+                {% for category_filter in overflow_category_filters %}
+                <a
+                  class="projects-category-menu-item{% if category_filter.is_active %} is-active{% endif %}"
+                  href="{{ category_filter.url }}"
+                >
+                  {{ category_filter.label }}
+                </a>
+                {% endfor %}
+              </div>
+            </details>
+            {% endif %}
+          </div>
+          <p class="projects-category-note">
+            {% if selected_category %}
+            Showing approved {{ selected_category_label.lower() }} campaigns.
+            {% else %}
+            Showing all approved campaigns.
+            {% endif %}
+          </p>
+        </section>
+
+        {% if flash_message %}
+        <p class="account-message projects-flash {{ flash_message.kind }}">{{ flash_message.message }}</p>
+        {% endif %}
+
+        <section class="projects-public-section projects-panel" id="published-projects">
+          <div class="section-heading compact projects-public-header">
+            <div>
+              <p class="eyebrow">Published Campaigns</p>
+            </div>
+            <div class="account-actions">
+              <a
+                class="solid-button"
+                href="{% if user_email %}/projects/create-campaign{% else %}/auth?mode=login{% endif %}"
+              >
+                Create a Campaign
+              </a>
+            </div>
+          </div>
+          <div class="projects-public-body">
+            {% if published_campaigns %}
+            <div class="public-campaign-grid">
+              {% for campaign in published_campaigns %}
+              <article class="projects-panel public-campaign-card">
+                <button
+                  class="public-campaign-open"
+                  type="button"
+                  data-project-title="{{ campaign.title }}"
+                  data-project-category="{{ campaign.category_label }}"
+                  data-project-owner="{{ campaign.owner_username }}"
+                  data-project-goal="{% if campaign.goal_amount %}${{ '{:,}'.format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}"
+                  data-project-deadline="{% if campaign.deadline %}Deadline {{ campaign.deadline }}{% else %}No deadline published{% endif %}"
+                  data-project-published="{% if campaign.published_at %}Published {{ campaign.published_at }}{% else %}Ready for support{% endif %}"
+                  data-project-description="{{ campaign.description or 'This approved campaign is ready to receive support.' }}"
+                  data-project-image="{{ campaign.cover_image_url or '' }}"
+                  data-project-images='{{ campaign.image_urls|tojson }}'
+                >
+                  <div class="public-campaign-image">
+                    {% if campaign.cover_image_url %}
+                    <img src="{{ campaign.cover_image_url }}" alt="{{ campaign.title }} cover image" />
+                    {% else %}
+                    <div class="public-campaign-image-placeholder">Approved Campaign</div>
+                    {% endif %}
+                  </div>
+                  <div class="public-campaign-body">
+                    <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+                    <strong>{{ campaign.title }}</strong>
+                  </div>
+                </button>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <section class="projects-empty-panel">
+              <p class="eyebrow">Published Campaigns</p>
+              <h2>No approved campaigns are visible yet.</h2>
+              <p>Campaigns appear here only after administrator approval and publication.</p>
+            </section>
+            {% endif %}
+          </div>
+        </section>
+
+        {% if published_campaigns %}
+        <div class="public-campaign-modal" id="public-campaign-modal" hidden role="dialog" aria-modal="true" aria-labelledby="public-campaign-modal-title">
+          <button
+            class="public-campaign-modal-backdrop"
+            type="button"
+            aria-label="Close campaign details"
+            data-close-project-modal="true"
+          ></button>
+          <section class="public-campaign-modal-panel">
+            <button
+              class="public-campaign-modal-close"
+              type="button"
+              aria-label="Close campaign details"
+              data-close-project-modal="true"
+            >
+              ×
+            </button>
+            <div class="public-campaign-modal-layout">
+              <div class="public-campaign-modal-photo" id="public-campaign-modal-photo">
+                <button
+                  class="public-campaign-modal-arrow public-campaign-modal-arrow-prev"
+                  id="public-campaign-modal-prev"
+                  type="button"
+                  aria-label="View previous campaign image"
+                  hidden
+                >
+                  ‹
+                </button>
+                <img src="" alt="Campaign cover image" id="public-campaign-modal-image" hidden />
+                <div class="public-campaign-image-placeholder" id="public-campaign-modal-placeholder">Approved Campaign</div>
+                <button
+                  class="public-campaign-modal-arrow public-campaign-modal-arrow-next"
+                  id="public-campaign-modal-next"
+                  type="button"
+                  aria-label="View next campaign image"
+                  hidden
+                >
+                  ›
+                </button>
+              </div>
+              <div class="public-campaign-modal-content">
+                <div class="public-campaign-modal-head">
+                  <span class="campaign-category-badge" id="public-campaign-modal-category"></span>
+                  <h2 id="public-campaign-modal-title"></h2>
+                </div>
+                <div class="public-campaign-modal-meta">
+                  <div class="public-campaign-modal-row">
+                    <span>Fund raiser</span>
+                    <strong id="public-campaign-modal-owner"></strong>
+                  </div>
+                  <div class="public-campaign-modal-row">
+                    <span>Goal</span>
+                    <strong id="public-campaign-modal-goal"></strong>
+                  </div>
+                  <div class="public-campaign-modal-row">
+                    <span>Deadline</span>
+                    <strong id="public-campaign-modal-deadline"></strong>
+                  </div>
+                  <div class="public-campaign-modal-row">
+                    <span>Published</span>
+                    <strong id="public-campaign-modal-published"></strong>
+                  </div>
+                </div>
+                <div class="public-campaign-modal-description">
+                  <p id="public-campaign-modal-description"></p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        {% endif %}
+
+      </main>
+    </div>
+
+    <script
+      src="/static/site.js?v=20260412-projects-category-overflow-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    ></script>
+  </body>
+</html>

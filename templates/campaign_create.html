@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Settings | FireflyFund</title>
+    <title>Create Campaign | FireflyFund</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -41,7 +41,7 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260412-settings-clean-1"
+      href="/static/styles.css?v=20260412-campaign-create-validation-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
@@ -64,7 +64,6 @@
           {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
         </nav>
         <div class="header-actions">
-          {% if user_email %}
           <div class="user-menu">
             <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
               <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
@@ -85,76 +84,88 @@
               <a class="user-dropdown-link danger" href="/logout">Log Out</a>
             </div>
           </div>
-          {% else %}
-          <a class="ghost-button" href="/auth?mode=login">Login</a>
-          <a class="solid-button" href="/auth?mode=register">Sign Up</a>
-          {% endif %}
         </div>
       </header>
 
       <main class="account-page">
-        <section class="account-card">
+        <section class="account-card campaign-create-card" id="campaign-create-form">
           <div class="account-card-head">
             <div>
-              <p class="eyebrow">Settings</p>
+              <p class="eyebrow">Campaign Management</p>
+              <h1>Create a campaign draft</h1>
             </div>
           </div>
 
-          {% if flash_message %}
+          {% if flash_message and "deleted" not in flash_message.message|lower %}
           <p class="account-message {{ flash_message.kind }}">{{ flash_message.message }}</p>
           {% endif %}
 
-          <p class="account-message" id="settings-message"></p>
+          <p class="projects-panel-copy">
+            Start your fundraising campaign here. FireflyFund will open the campaign workflow after this step, and you can exit now if you do not want to continue.
+          </p>
 
-          <form class="account-form" id="change-password-form">
+          <form class="account-form" id="campaign-create-draft-form" method="post" action="/projects/create">
             <label class="account-field">
-              <span>Current Password</span>
-              <input type="password" name="current_password" required />
+              <span>Campaign Title</span>
+              <input type="text" name="title" minlength="4" maxlength="160" placeholder="Enter a clear campaign title" required />
             </label>
-
             <label class="account-field">
-              <span>New Password</span>
-              <input type="password" name="new_password" required />
-              <small class="field-hint">Use at least 6 characters with both letters and numbers.</small>
+              <span>Category</span>
+              <select name="category" required>
+                {% for category_value, category_label in category_options %}
+                <option value="{{ category_value }}"{% if category_value == "other" %} selected{% endif %}>{{ category_label }}</option>
+                {% endfor %}
+              </select>
             </label>
-
-            <label class="account-field">
-              <span>Confirm New Password</span>
-              <input type="password" name="confirm_new_password" required />
-            </label>
-
             <div class="account-actions">
-              <button class="solid-button" type="submit">Change Password</button>
-              <a class="ghost-button" href="/profile">Go to Profile</a>
+              <button class="solid-button" type="submit">Create Draft</button>
+              <a class="ghost-button" href="/projects">Exit</a>
             </div>
           </form>
 
-          <section class="danger-zone">
-            <div class="danger-zone-head">
-              <p class="eyebrow">Delete Account</p>
-              <h2>Delete your account</h2>
+          <section class="settings-campaign-section profile-campaign-section" id="campaign-library">
+            <div class="projects-panel-head">
+              <div>
+                <p class="eyebrow">My Campaigns</p>
+                <h2>Open an existing campaign workflow</h2>
+              </div>
             </div>
 
-            <p class="account-message" id="delete-account-message"></p>
+            {% if flash_message and "deleted" in flash_message.message|lower %}
+            <p class="account-message profile-campaign-message {{ flash_message.kind }}">{{ flash_message.message }}</p>
+            {% endif %}
 
-            <form class="account-form" id="delete-account-form">
-              <label class="account-field">
-                <span>Current Password</span>
-                <input type="password" name="current_password" required />
-              </label>
-
-              <div class="account-actions">
-                <button class="danger-button" type="submit">Delete Account</button>
-              </div>
-            </form>
+            {% if campaigns %}
+            <div class="projects-campaign-list">
+              {% for campaign in campaigns %}
+              <a class="projects-campaign-card" href="/projects/manage/{{ campaign.id }}#campaign-workflow">
+                <div class="projects-campaign-card-head">
+                  <div class="public-campaign-heading">
+                    <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+                    <strong>{{ campaign.title }}</strong>
+                  </div>
+                  <span class="campaign-status-badge status-{{ campaign.status }}">{{ campaign.status_label }}</span>
+                </div>
+                <div class="projects-campaign-card-meta">
+                  <span>{{ campaign.workflow_stage_label }}</span>
+                  <span>{% if campaign.goal_amount %}${{ "{:,}".format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}</span>
+                  <span>{{ campaign.image_count }} image{% if campaign.image_count != 1 %}s{% endif %}</span>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="projects-empty compact">
+              <p>No campaign draft has been created yet.</p>
+            </div>
+            {% endif %}
           </section>
-
         </section>
       </main>
     </div>
 
     <script
-      src="/static/site.js?v=20260412-settings-clean-1"
+      src="/static/site.js?v=20260412-campaign-create-validation-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     ></script>
   </body>

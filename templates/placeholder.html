@@ -41,7 +41,7 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260410-asset-fallback-1"
+      href="/static/styles.css?v=20260412-placeholder-user-menu-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
@@ -61,8 +61,35 @@
           <a href="/about">About Us</a>
           <a href="/transparency">Transparency</a>
           <a href="/projects">Projects</a>
+          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
         </nav>
-        <div class="header-spacer" aria-hidden="true"></div>
+        <div class="header-actions">
+          {% if user_email %}
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+          {% else %}
+          <a class="ghost-button" href="/auth?mode=login">Login</a>
+          <a class="solid-button" href="/auth?mode=register">Sign Up</a>
+          {% endif %}
+        </div>
       </header>
 
       <main class="placeholder-page">

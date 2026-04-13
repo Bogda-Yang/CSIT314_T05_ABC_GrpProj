@@ -6,6 +6,14 @@ const avatarInput = document.querySelector("#avatar-input");
 const profileAvatarFrame = document.querySelector("#profile-avatar-frame");
 const profileAvatarImage = document.querySelector("#profile-avatar-image");
 const homeUserAvatar = document.querySelector("#home-user-avatar");
+const campaignImagesInput = document.querySelector("#campaign-images-input");
+const campaignImagesFileLabel = document.querySelector("#campaign-images-file-label");
+const campaignImagesSelectionStatus = document.querySelector("#campaign-images-selection-status");
+const campaignCreateDraftForm = document.querySelector("#campaign-create-draft-form");
+const campaignBasicForm = document.querySelector("#campaign-basic form");
+const campaignGoalForm = document.querySelector("#campaign-goal form");
+const campaignDescriptionForm = document.querySelector("#campaign-description form");
+const campaignDeadlineForm = document.querySelector("#campaign-deadline form");
 
 // 校验密码规则：至少 6 位，且同时包含字母和数字
 function validatePasswordPolicy(password) {
@@ -206,6 +214,29 @@ if (profileForm) {
   });
 }
 
+// 删除账号
+if (deleteAccountForm) {
+  const deleteAccountMessage = document.querySelector("#delete-account-message");
+
+  deleteAccountForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      current_password: deleteAccountForm.elements.current_password.value,
+    };
+
+    try {
+      setAccountMessage(deleteAccountMessage, "Deleting account...");
+      const result = await postJson("/api/settings/delete-account", payload);
+      deleteAccountForm.reset();
+      setAccountMessage(deleteAccountMessage, result.message, "success");
+      window.location.href = result.redirect || "/auth?mode=register";
+    } catch (error) {
+      setAccountMessage(deleteAccountMessage, error.message, "error");
+    }
+  });
+}
+
 // 上传个人头像
 if (avatarInput) {
   const profileMessage = document.querySelector("#profile-message");
@@ -262,30 +293,8 @@ if (changePasswordForm) {
   });
 }
 
-// 删除账号
-if (deleteAccountForm) {
-  const deleteAccountMessage = document.querySelector("#delete-account-message");
-
-  deleteAccountForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const payload = {
-      current_password: deleteAccountForm.elements.current_password.value,
-    };
-
-    try {
-      setAccountMessage(deleteAccountMessage, "Deleting account...");
-      const result = await postJson("/api/settings/delete-account", payload);
-      deleteAccountForm.reset();
-      setAccountMessage(deleteAccountMessage, result.message, "success");
-      window.location.href = result.redirect || "/auth?mode=register";
-    } catch (error) {
-      setAccountMessage(deleteAccountMessage, error.message, "error");
-    }
-  });
-}
-
 const teamModal = document.querySelector("#team-modal");
+const publicCampaignModal = document.querySelector("#public-campaign-modal");
 
 // 打开团队成员简介弹窗
 if (teamModal) {
@@ -328,4 +337,286 @@ if (teamModal) {
       closeModal();
     }
   });
+}
+
+// 打开公开筹款项目详情弹窗
+if (publicCampaignModal) {
+  const projectButtons = document.querySelectorAll(".public-campaign-open");
+  const modalTitle = document.querySelector("#public-campaign-modal-title");
+  const modalCategory = document.querySelector("#public-campaign-modal-category");
+  const modalOwner = document.querySelector("#public-campaign-modal-owner");
+  const modalGoal = document.querySelector("#public-campaign-modal-goal");
+  const modalDeadline = document.querySelector("#public-campaign-modal-deadline");
+  const modalPublished = document.querySelector("#public-campaign-modal-published");
+  const modalDescription = document.querySelector("#public-campaign-modal-description");
+  const modalImage = document.querySelector("#public-campaign-modal-image");
+  const modalPlaceholder = document.querySelector("#public-campaign-modal-placeholder");
+  const modalPrev = document.querySelector("#public-campaign-modal-prev");
+  const modalNext = document.querySelector("#public-campaign-modal-next");
+  const closeTriggers = publicCampaignModal.querySelectorAll("[data-close-project-modal='true']");
+  let currentProjectImages = [];
+  let currentProjectImageIndex = 0;
+
+  const renderProjectModalImage = () => {
+    const imageUrl = currentProjectImages[currentProjectImageIndex] || "";
+
+    if (modalImage && modalPlaceholder) {
+      if (imageUrl) {
+        modalImage.src = imageUrl;
+        modalImage.hidden = false;
+        modalPlaceholder.hidden = true;
+      } else {
+        modalImage.src = "";
+        modalImage.hidden = true;
+        modalPlaceholder.hidden = false;
+      }
+    }
+
+    const showArrows = currentProjectImages.length > 1;
+    if (modalPrev) {
+      modalPrev.hidden = !showArrows;
+    }
+    if (modalNext) {
+      modalNext.hidden = !showArrows;
+    }
+  };
+
+  const openProjectModal = (button) => {
+    if (modalTitle) {
+      modalTitle.textContent = button.dataset.projectTitle || "Campaign";
+    }
+    if (modalCategory) {
+      modalCategory.textContent = button.dataset.projectCategory || "Other";
+    }
+    if (modalOwner) {
+      modalOwner.textContent = button.dataset.projectOwner || "Unknown";
+    }
+    if (modalGoal) {
+      modalGoal.textContent = button.dataset.projectGoal || "Goal pending";
+    }
+    if (modalDeadline) {
+      modalDeadline.textContent = button.dataset.projectDeadline || "No deadline published";
+    }
+    if (modalPublished) {
+      modalPublished.textContent = button.dataset.projectPublished || "Ready for support";
+    }
+    if (modalDescription) {
+      modalDescription.textContent =
+        button.dataset.projectDescription || "This approved campaign is ready to receive support.";
+    }
+
+    try {
+      const parsedImages = JSON.parse(button.dataset.projectImages || "[]");
+      currentProjectImages = Array.isArray(parsedImages) ? parsedImages.filter(Boolean) : [];
+    } catch (error) {
+      currentProjectImages = [];
+    }
+
+    if (currentProjectImages.length === 0 && button.dataset.projectImage) {
+      currentProjectImages = [button.dataset.projectImage];
+    }
+    currentProjectImageIndex = 0;
+    renderProjectModalImage();
+
+    publicCampaignModal.removeAttribute("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeProjectModal = () => {
+    publicCampaignModal.setAttribute("hidden", "");
+    document.body.style.overflow = "";
+  };
+
+  projectButtons.forEach((button) => {
+    button.addEventListener("click", () => openProjectModal(button));
+  });
+
+  closeTriggers.forEach((node) => {
+    node.addEventListener("click", closeProjectModal);
+  });
+
+  modalPrev?.addEventListener("click", () => {
+    if (currentProjectImages.length <= 1) {
+      return;
+    }
+    currentProjectImageIndex =
+      (currentProjectImageIndex - 1 + currentProjectImages.length) % currentProjectImages.length;
+    renderProjectModalImage();
+  });
+
+  modalNext?.addEventListener("click", () => {
+    if (currentProjectImages.length <= 1) {
+      return;
+    }
+    currentProjectImageIndex =
+      (currentProjectImageIndex + 1) % currentProjectImages.length;
+    renderProjectModalImage();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (publicCampaignModal.hasAttribute("hidden")) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft" && currentProjectImages.length > 1) {
+      currentProjectImageIndex =
+        (currentProjectImageIndex - 1 + currentProjectImages.length) % currentProjectImages.length;
+      renderProjectModalImage();
+      return;
+    }
+
+    if (event.key === "ArrowRight" && currentProjectImages.length > 1) {
+      currentProjectImageIndex =
+        (currentProjectImageIndex + 1) % currentProjectImages.length;
+      renderProjectModalImage();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      closeProjectModal();
+    }
+  });
+}
+
+// 项目图片一次性多选提示
+if (campaignImagesInput && campaignImagesSelectionStatus && campaignImagesFileLabel) {
+  const defaultSelectionMessage = "No images selected yet.";
+  const defaultFileLabel = "No files chosen";
+
+  campaignImagesInput.addEventListener("invalid", () => {
+    if (campaignImagesInput.validity.valueMissing) {
+      campaignImagesInput.setCustomValidity("Please choose a file.");
+      campaignImagesSelectionStatus.textContent = "Please choose a file.";
+      campaignImagesSelectionStatus.style.color = "#c44949";
+    } else {
+      campaignImagesInput.setCustomValidity("");
+    }
+  });
+
+  campaignImagesInput.addEventListener("change", () => {
+    const fileCount = campaignImagesInput.files?.length || 0;
+    campaignImagesInput.setCustomValidity("");
+
+    if (fileCount === 0) {
+      campaignImagesFileLabel.textContent = defaultFileLabel;
+      campaignImagesSelectionStatus.textContent = defaultSelectionMessage;
+      campaignImagesSelectionStatus.style.color = "";
+      return;
+    }
+
+    campaignImagesFileLabel.textContent =
+      fileCount === 1 ? "1 file chosen" : `${fileCount} files chosen`;
+
+    if (fileCount > 5) {
+      campaignImagesSelectionStatus.textContent =
+        "Select up to 5 images in a single upload.";
+      campaignImagesSelectionStatus.style.color = "#c44949";
+      return;
+    }
+
+    const imageLabel = fileCount === 1 ? "image" : "images";
+    campaignImagesSelectionStatus.textContent =
+      `${fileCount} ${imageLabel} selected. They will be uploaded together.`;
+    campaignImagesSelectionStatus.style.color = "";
+  });
+}
+
+// 创建筹款项目页标题英文校验提示
+if (campaignCreateDraftForm) {
+  const campaignTitleInput = campaignCreateDraftForm.elements.title;
+
+  if (campaignTitleInput) {
+    campaignTitleInput.addEventListener("invalid", () => {
+      if (campaignTitleInput.validity.valueMissing) {
+        campaignTitleInput.setCustomValidity("Please fill out this field.");
+      } else if (campaignTitleInput.validity.tooShort) {
+        campaignTitleInput.setCustomValidity("Please lengthen this text to at least 4 characters.");
+      } else {
+        campaignTitleInput.setCustomValidity("");
+      }
+    });
+
+    campaignTitleInput.addEventListener("input", () => {
+      campaignTitleInput.setCustomValidity("");
+    });
+  }
+}
+
+// 项目工作流页必填字段英文校验提示
+if (campaignBasicForm) {
+  const basicTitleInput = campaignBasicForm.elements.title;
+
+  if (basicTitleInput) {
+    basicTitleInput.addEventListener("invalid", () => {
+      if (basicTitleInput.validity.valueMissing) {
+        basicTitleInput.setCustomValidity("Please fill out this field.");
+      } else if (basicTitleInput.validity.tooShort) {
+        basicTitleInput.setCustomValidity("Please lengthen this text to at least 4 characters.");
+      } else {
+        basicTitleInput.setCustomValidity("");
+      }
+    });
+
+    basicTitleInput.addEventListener("input", () => {
+      basicTitleInput.setCustomValidity("");
+    });
+  }
+}
+
+if (campaignGoalForm) {
+  const goalAmountInput = campaignGoalForm.elements.goal_amount;
+
+  if (goalAmountInput) {
+    goalAmountInput.addEventListener("invalid", () => {
+      if (goalAmountInput.validity.valueMissing) {
+        goalAmountInput.setCustomValidity("Please enter the required amount.");
+      } else if (goalAmountInput.validity.rangeUnderflow) {
+        goalAmountInput.setCustomValidity("Please enter an amount greater than or equal to 1.");
+      } else {
+        goalAmountInput.setCustomValidity("");
+      }
+    });
+
+    goalAmountInput.addEventListener("input", () => {
+      goalAmountInput.setCustomValidity("");
+    });
+  }
+}
+
+if (campaignDescriptionForm) {
+  const descriptionInput = campaignDescriptionForm.elements.description;
+
+  if (descriptionInput) {
+    descriptionInput.addEventListener("invalid", () => {
+      if (descriptionInput.validity.valueMissing) {
+        descriptionInput.setCustomValidity("Please fill out this field.");
+      } else if (descriptionInput.validity.tooShort) {
+        descriptionInput.setCustomValidity("Please lengthen this text to at least 20 characters.");
+      } else {
+        descriptionInput.setCustomValidity("");
+      }
+    });
+
+    descriptionInput.addEventListener("input", () => {
+      descriptionInput.setCustomValidity("");
+    });
+  }
+}
+
+if (campaignDeadlineForm) {
+  const deadlineInput = campaignDeadlineForm.elements.deadline;
+
+  if (deadlineInput) {
+    deadlineInput.addEventListener("invalid", () => {
+      if (deadlineInput.validity.valueMissing) {
+        deadlineInput.setCustomValidity("Please fill out this field.");
+      } else {
+        deadlineInput.setCustomValidity("");
+      }
+    });
+
+    deadlineInput.addEventListener("input", () => {
+      deadlineInput.setCustomValidity("");
+    });
+  }
 }

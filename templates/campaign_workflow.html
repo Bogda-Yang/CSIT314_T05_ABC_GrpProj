@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campaign Workflow | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        const retryPrefix = "fireflyfund-asset-retry";
+        function reloadOnce() {
+          try {
+            const retryKey = `${retryPrefix}:${window.location.pathname}`;
+            if (sessionStorage.getItem(retryKey) === "1") return;
+            sessionStorage.setItem(retryKey, "1");
+          } catch (error) {}
+          const url = new URL(window.location.href);
+          url.searchParams.set("_asset_retry", Date.now().toString());
+          window.location.replace(url.toString());
+        }
+        window.__fireflyReloadOnce = reloadOnce;
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            try {
+              const bg = window.getComputedStyle(document.body).backgroundImage || "";
+              if (!bg || bg === "none") {
+                reloadOnce();
+                return;
+              }
+              sessionStorage.removeItem(`${retryPrefix}:${window.location.pathname}`);
+            } catch (error) {}
+          }, 250);
+        });
+      })();
+    </script>
+    <link
+      id="page-style"
+      rel="stylesheet"
+      href="/static/styles.css?v=20260413-campaign-goal-validation-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/transparency">Transparency</a>
+          <a href="/projects">Projects</a>
+          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
+        </nav>
+        <div class="header-actions">
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="projects-page campaign-workflow-page">
+        {% if flash_message %}
+        <p class="account-message projects-flash {{ flash_message.kind }}">{{ flash_message.message }}</p>
+        {% endif %}
+
+        <section class="projects-layout workflow-layout">
+          <aside class="projects-sidebar">
+            <section class="projects-panel" id="campaign-list">
+              <div class="projects-panel-head">
+                <div>
+                  <p class="eyebrow">My Campaigns</p>
+                  <h2>Open another draft</h2>
+                </div>
+              </div>
+              {% if campaigns %}
+              <div class="projects-campaign-list">
+                {% for campaign in campaigns %}
+                <a
+                  class="projects-campaign-card{% if selected_campaign and selected_campaign.id == campaign.id %} is-active{% endif %}"
+                  href="/projects/manage/{{ campaign.id }}#campaign-workflow"
+                >
+                  <div class="projects-campaign-card-head">
+                    <div class="public-campaign-heading">
+                      <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+                      <strong>{{ campaign.title }}</strong>
+                    </div>
+                    <span class="campaign-status-badge status-{{ campaign.status }}">{{ campaign.status_label }}</span>
+                  </div>
+                  <div class="projects-campaign-card-meta">
+                    <span>{{ campaign.workflow_stage_label }}</span>
+                    <span>{% if campaign.goal_amount %}${{ "{:,}".format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}</span>
+                    <span>{{ campaign.image_count }} image{% if campaign.image_count != 1 %}s{% endif %}</span>
+                  </div>
+                </a>
+                {% endfor %}
+              </div>
+              {% endif %}
+              <div class="account-actions">
+                <a class="ghost-button" href="/projects/create-campaign">Create Another Draft</a>
+              </div>
+            </section>
+          </aside>
+
+          <section class="projects-main">
+            <section class="projects-panel projects-selected-panel">
+              <div class="projects-panel-head">
+                <div>
+                  <p class="eyebrow">Selected Campaign</p>
+                </div>
+                <span class="campaign-status-badge status-{{ selected_campaign.status }}">
+                  {{ selected_campaign.status_label }}
+                </span>
+              </div>
+
+              <div class="projects-summary-grid">
+                <article>
+                  <span>Category</span>
+                  <strong>{{ selected_campaign.category_label }}</strong>
+                </article>
+                <article>
+                  <span>Workflow Stage</span>
+                  <strong>{{ selected_campaign.workflow_stage_label }}</strong>
+                </article>
+                <article>
+                  <span>Images</span>
+                  <strong>{{ selected_campaign.image_count }}</strong>
+                </article>
+                <article>
+                  <span>Deadline</span>
+                  <strong>{{ selected_campaign.deadline or "Not set" }}</strong>
+                </article>
+              </div>
+            </section>
+
+            <div class="projects-editor-grid">
+              <section class="projects-panel" id="campaign-basic">
+                <div class="projects-panel-head">
+                  <div>
+                    <h3>Basic information</h3>
+                  </div>
+                </div>
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/basic">
+                  <label class="account-field">
+                    <span>Campaign Title</span>
+                    <input type="text" name="title" minlength="4" maxlength="160" value="{{ selected_campaign.title }}" required />
+                  </label>
+                  <label class="account-field">
+                    <span>Category</span>
+                    <select name="category" required>
+                      {% for category_value, category_label in category_options %}
+                      <option value="{{ category_value }}"{% if selected_campaign.category == category_value %} selected{% endif %}>{{ category_label }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <div class="account-actions">
+                    <button class="solid-button" type="submit">Save Basic Information</button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="projects-panel" id="campaign-goal">
+                <div class="projects-panel-head">
+                  <div>
+                    <h3>Set fundraising goal</h3>
+                  </div>
+                </div>
+                {% if workflow_access.goal %}
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/goal">
+                  <label class="account-field">
+                    <span>Goal Amount (SGD)</span>
+                    <input type="number" name="goal_amount" min="1" step="1" value="{{ selected_campaign.goal_amount or '' }}" required />
+                  </label>
+                  <div class="account-actions">
+                    <button class="solid-button" type="submit">Save Goal</button>
+                  </div>
+                </form>
+                {% else %}
+                <div class="workflow-locked-card">
+                  <strong>Locked</strong>
+                  <p>Save Basic campaign information first to unlock the fundraising goal step.</p>
+                </div>
+                {% endif %}
+              </section>
+
+              <section class="projects-panel projects-panel-wide" id="campaign-description">
+                <div class="projects-panel-head">
+                  <div>
+                    <h3>Add description</h3>
+                  </div>
+                </div>
+                {% if workflow_access.description %}
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/description">
+                  <label class="account-field">
+                    <span>Description</span>
+                    <textarea name="description" rows="7" minlength="20" maxlength="5000" placeholder="Explain the need, the background, and how the raised funds will be used." required>{{ selected_campaign.description }}</textarea>
+                  </label>
+                  <div class="account-actions">
+                    <button class="solid-button" type="submit">Save Description</button>
+                  </div>
+                </form>
+                {% else %}
+                <div class="workflow-locked-card">
+                  <strong>Locked</strong>
+                  <p>Save the fundraising goal first to unlock the description step.</p>
+                </div>
+                {% endif %}
+              </section>
+
+              <section class="projects-panel projects-panel-wide" id="campaign-images">
+                <div class="projects-panel-head">
+                  <div>
+                    <h3>Upload images</h3>
+                  </div>
+                </div>
+                {% if workflow_access.images %}
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/images" enctype="multipart/form-data">
+                  <div class="account-field">
+                    <span>Campaign Images</span>
+                    <input
+                      id="campaign-images-input"
+                      class="campaign-images-native-input"
+                      type="file"
+                      name="images"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      required
+                    />
+                    <label class="campaign-file-picker" for="campaign-images-input">
+                      <span class="campaign-file-picker-button">Choose Files</span>
+                      <span class="campaign-file-picker-label" id="campaign-images-file-label">No files chosen</span>
+                    </label>
+                    <small class="field-hint">Select up to 5 images in one upload. Each image must be JPG, PNG, or WEBP and 5 MB or smaller.</small>
+                    <small class="field-hint" id="campaign-images-selection-status">No images selected yet.</small>
+                  </div>
+                  <div class="account-actions">
+                    <button class="solid-button" type="submit">Upload Selected Images</button>
+                  </div>
+                </form>
+                {% if selected_campaign.images %}
+                <div class="campaign-image-grid">
+                  {% for image in selected_campaign.images %}
+                  <div class="campaign-image-thumb">
+                    <form
+                      class="campaign-image-delete-form"
+                      method="post"
+                      action="/projects/{{ selected_campaign.id }}/images/{{ image.id }}/delete"
+                    >
+                      <button
+                        class="campaign-image-delete-button"
+                        type="submit"
+                        aria-label="Delete campaign image {{ loop.index }}"
+                      >
+                        ×
+                      </button>
+                    </form>
+                    <img src="{{ image.url }}" alt="Campaign image {{ loop.index }}" />
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="projects-empty compact">
+                  <p>No image has been uploaded yet.</p>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="workflow-locked-card">
+                  <strong>Locked</strong>
+                  <p>Save the campaign description first to unlock image upload.</p>
+                </div>
+                {% endif %}
+              </section>
+
+              <section class="projects-panel" id="campaign-deadline">
+                <div class="projects-panel-head">
+                  <div>
+                    <h3>Set deadline</h3>
+                  </div>
+                </div>
+                {% if workflow_access.deadline %}
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/deadline">
+                  <label class="account-field">
+                    <span>Deadline</span>
+                    <input type="date" name="deadline" value="{{ selected_campaign.deadline or '' }}" required />
+                  </label>
+                  <div class="account-actions">
+                    <button class="solid-button" type="submit">Save Deadline</button>
+                  </div>
+                </form>
+                {% else %}
+                <div class="workflow-locked-card">
+                  <strong>Locked</strong>
+                  <p>Upload at least one campaign image first to unlock the deadline step.</p>
+                </div>
+                {% endif %}
+              </section>
+
+              <section class="projects-panel" id="campaign-submission">
+                <div class="projects-panel-head">
+                  <div>
+                    <h3>Approval submission and status</h3>
+                  </div>
+                </div>
+                <div class="projects-status-card">
+                  <div class="projects-status-row">
+                    <span>Current status</span>
+                    <strong>{{ selected_campaign.status_label }}</strong>
+                  </div>
+                  <div class="projects-status-row">
+                    <span>Submitted</span>
+                    <strong>{{ selected_campaign.submitted_at or "Not submitted" }}</strong>
+                  </div>
+                  <div class="projects-status-row">
+                    <span>Published</span>
+                    <strong>{{ selected_campaign.published_at or "Not published" }}</strong>
+                  </div>
+                  {% if selected_campaign.rejection_reason %}
+                  <div class="projects-status-note rejected">
+                    <strong>Rejection reason</strong>
+                    <p>{{ selected_campaign.rejection_reason }}</p>
+                  </div>
+                  {% endif %}
+                </div>
+                {% if workflow_access.submit %}
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/submit">
+                  <div class="account-actions">
+                    <button class="solid-button" type="submit">Submit for Approval</button>
+                  </div>
+                </form>
+                {% else %}
+                <div class="workflow-locked-card">
+                  <strong>Locked</strong>
+                  <p>Save the campaign deadline first to unlock submission.</p>
+                </div>
+                {% endif %}
+              </section>
+
+              <section class="projects-panel projects-panel-wide danger-zone campaign-danger-zone" id="campaign-delete">
+                <div class="danger-zone-head">
+                  <p class="eyebrow">Delete campaign</p>
+                  <h3>Remove this campaign draft or listing</h3>
+                </div>
+                <p class="projects-panel-copy">
+                  Delete outdated campaigns if they are no longer needed.
+                </p>
+                <form class="account-form" method="post" action="/projects/{{ selected_campaign.id }}/delete">
+                  <div class="account-actions">
+                    <button class="danger-button" type="submit">Delete Campaign</button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script
+      src="/static/site.js?v=20260413-campaign-goal-validation-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    ></script>
+  </body>
+</html>

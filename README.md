@@ -53,9 +53,9 @@ assets/
   images/
 uploads/
   avatars/
+docs/
 requirements.txt
 start.sh
-U1-5_BCE_MAPPING.md
 ```
 
 ## Environment Variables
@@ -125,9 +125,17 @@ uploads/avatars/
 
 ## BCE Mapping
 
-The current BCE file is here:
+The current BCE mapping files are here:
 
-- [U1-5_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/U1-5_BCE_MAPPING.md)
+- [U1-5_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/docs/U1-5_BCE_MAPPING.md)
+- [A1-5_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/docs/A1-5_BCE_MAPPING.md)
+- [P1-7_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/docs/P1-7_BCE_MAPPING.md)
+- [F1-13_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/docs/F1-13_BCE_MAPPING.md)
+- [D1-11_BCE_MAPPING.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/docs/D1-11_BCE_MAPPING.md)
+
+The CI/CD evidence report is here:
+
+- [CI_CD_EVIDENCE_REPORT.md](/Users/apple/Desktop/CSIT314_T05_ABC_GrpProj/docs/CI_CD_EVIDENCE_REPORT.md)
 
 ## Git Notes
 

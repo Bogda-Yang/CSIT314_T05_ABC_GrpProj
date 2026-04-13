@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        const retryPrefix = "fireflyfund-asset-retry";
+        function reloadOnce() {
+          try {
+            const retryKey = `${retryPrefix}:${window.location.pathname}`;
+            if (sessionStorage.getItem(retryKey) === "1") return;
+            sessionStorage.setItem(retryKey, "1");
+          } catch (error) {}
+          const url = new URL(window.location.href);
+          url.searchParams.set("_asset_retry", Date.now().toString());
+          window.location.replace(url.toString());
+        }
+        window.__fireflyReloadOnce = reloadOnce;
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            try {
+              const bg = window.getComputedStyle(document.body).backgroundImage || "";
+              if (!bg || bg === "none") {
+                reloadOnce();
+                return;
+              }
+              sessionStorage.removeItem(`${retryPrefix}:${window.location.pathname}`);
+            } catch (error) {}
+          }, 250);
+        });
+      })();
+    </script>
+    <link
+      id="page-style"
+      rel="stylesheet"
+      href="/static/styles.css?v=20260412-dashboard-review-list-rows-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/">Home</a>
+          <a href="/about">About Us</a>
+          <a href="/transparency">Transparency</a>
+          <a href="/projects">Projects</a>
+          <a href="/dashboard">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "Admin" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="projects-page dashboard-page">
+        <section class="dashboard-stats-row" aria-label="Dashboard status summary">
+          <article class="projects-hero-chip">
+            <span>Pending Campaigns</span>
+            <strong>{{ pending_count }}</strong>
+          </article>
+          <article class="projects-hero-chip">
+            <span>Processed Campaigns</span>
+            <strong>{{ processed_count }}</strong>
+          </article>
+          <article class="projects-hero-chip">
+            <span>Approved Campaigns</span>
+            <strong>{{ approved_count }}</strong>
+          </article>
+          <article class="projects-hero-chip">
+            <span>Rejected Campaigns</span>
+            <strong>{{ rejected_count }}</strong>
+          </article>
+        </section>
+
+        {% if flash_message %}
+        <p class="account-message projects-flash {{ flash_message.kind }}">{{ flash_message.message }}</p>
+        {% endif %}
+
+        <section class="projects-admin-section" id="admin-review">
+          <div class="dashboard-review-grid">
+            <aside class="projects-panel dashboard-review-panel">
+              <div class="projects-panel-head dashboard-review-head">
+                <div>
+                  <p class="eyebrow">Campaign ReviewPage</p>
+                </div>
+                <form class="dashboard-review-filters" method="get" action="/dashboard#admin-review">
+                  <label class="dashboard-review-filter">
+                    <span>Category</span>
+                    <select name="category" onchange="this.form.submit()">
+                      {% for filter_option in review_category_filters %}
+                      <option value="{{ filter_option.value }}" {% if filter_option.is_active %}selected{% endif %}>
+                        {{ filter_option.label }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                  <label class="dashboard-review-filter">
+                    <span>Sort By</span>
+                    <select name="sort" onchange="this.form.submit()">
+                      {% for sort_option in review_sort_filters %}
+                      <option value="{{ sort_option.value }}" {% if sort_option.is_active %}selected{% endif %}>
+                        {{ sort_option.label }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                </form>
+              </div>
+              {% if pending_campaigns %}
+              <div class="projects-campaign-list review-list">
+                {% for campaign in pending_campaigns %}
+                <a
+                  class="projects-campaign-card{% if selected_review_campaign and selected_review_campaign.id == campaign.id %} is-active{% endif %}"
+                  href="{{ campaign.review_url }}"
+                >
+                  <div class="projects-campaign-card-head">
+                    <strong>{{ campaign.title }}</strong>
+                    <span class="campaign-status-badge status-{{ campaign.status }}">{{ campaign.status_label }}</span>
+                  </div>
+                  <div class="projects-campaign-card-meta">
+                    <span>{{ campaign.owner_username }}</span>
+                    <span>{% if campaign.goal_amount %}${{ "{:,}".format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}</span>
+                  </div>
+                </a>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="projects-empty compact">
+                <p>No pending campaigns need review right now.</p>
+              </div>
+              {% endif %}
+            </aside>
+
+            <section class="projects-panel dashboard-action-panel">
+              {% if selected_review_campaign %}
+              <div class="projects-panel-head">
+                <div>
+                  <p class="eyebrow">Approve</p>
+                </div>
+              </div>
+              <p class="projects-panel-copy">
+                Publish <strong>{{ selected_review_campaign.title }}</strong> so it becomes visible on the public Projects page.
+              </p>
+              <form class="account-form" method="post" action="/projects/review/{{ selected_review_campaign.id }}/approve">
+                <input type="hidden" name="category" value="{{ review_selected_category or 'all' }}" />
+                <input type="hidden" name="sort" value="{{ review_selected_sort }}" />
+                <div class="account-actions">
+                  <button class="solid-button" type="submit">Approve Campaign</button>
+                </div>
+              </form>
+              {% else %}
+              <div class="dashboard-action-empty">
+                <p>Select a pending campaign to enable approval.</p>
+              </div>
+              {% endif %}
+            </section>
+
+            <section class="projects-panel dashboard-action-panel">
+              {% if selected_review_campaign %}
+              <div class="projects-panel-head">
+                <div>
+                  <p class="eyebrow">Reject</p>
+                </div>
+              </div>
+              <form class="account-form dashboard-inline-reject-form" method="post" action="/projects/review/{{ selected_review_campaign.id }}/reject">
+                <input type="hidden" name="category" value="{{ review_selected_category or 'all' }}" />
+                <input type="hidden" name="sort" value="{{ review_selected_sort }}" />
+                <label class="account-field">
+                  <span>Rejection Reason</span>
+                  <textarea
+                    name="reason"
+                    rows="6"
+                    minlength="10"
+                    placeholder="Explain why this campaign cannot be published."
+                    required
+                  ></textarea>
+                </label>
+                <div class="account-actions">
+                  <button class="danger-button" type="submit">Reject Campaign</button>
+                </div>
+              </form>
+              {% else %}
+              <div class="dashboard-action-empty">
+                <p>Select a pending campaign to enter a rejection reason.</p>
+              </div>
+              {% endif %}
+            </section>
+          </div>
+        </section>
+
+        {% if selected_review_campaign and review_modal_open %}
+        <div class="dashboard-review-modal" role="dialog" aria-modal="true" aria-labelledby="dashboard-review-title">
+          <a
+            class="dashboard-review-modal-backdrop"
+            href="{{ selected_review_campaign.close_review_url }}"
+            aria-label="Close review details"
+          ></a>
+          <section class="dashboard-review-modal-panel">
+            <a
+              class="dashboard-review-modal-close"
+              href="{{ selected_review_campaign.close_review_url }}"
+              aria-label="Close review details"
+            >
+              ×
+            </a>
+            <div class="projects-panel-head dashboard-review-modal-head">
+              <div>
+                <p class="eyebrow">ReviewCampaignDetails</p>
+                <h2 id="dashboard-review-title">{{ selected_review_campaign.title }}</h2>
+              </div>
+              <span class="campaign-status-badge status-{{ selected_review_campaign.status }}">
+                {{ selected_review_campaign.status_label }}
+              </span>
+            </div>
+
+            <div class="projects-summary-grid">
+              <article>
+                <span>Fund raiser</span>
+                <strong>{{ selected_review_campaign.owner_username }}</strong>
+              </article>
+              <article>
+                <span>Email</span>
+                <strong>{{ selected_review_campaign.owner_email or "N/A" }}</strong>
+              </article>
+              <article>
+                <span>Goal</span>
+                <strong>{% if selected_review_campaign.goal_amount %}${{ "{:,}".format(selected_review_campaign.goal_amount) }}{% else %}Not set{% endif %}</strong>
+              </article>
+              <article>
+                <span>Deadline</span>
+                <strong>{{ selected_review_campaign.deadline or "Not set" }}</strong>
+              </article>
+            </div>
+
+            <div class="projects-review-copy">
+              <h3>Description</h3>
+              <p>{{ selected_review_campaign.description or "No description provided." }}</p>
+            </div>
+
+            {% if selected_review_campaign.image_urls %}
+            <div class="campaign-image-grid">
+              {% for image_url in selected_review_campaign.image_urls %}
+              <div class="campaign-image-thumb">
+                <img src="{{ image_url }}" alt="Review image {{ loop.index }}" />
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </section>
+        </div>
+        {% endif %}
+      </main>
+    </div>
+
+    <script
+      src="/static/site.js?v=20260412-dashboard-review-list-rows-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    ></script>
+  </body>
+</html>

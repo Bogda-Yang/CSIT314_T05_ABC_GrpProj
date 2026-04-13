@@ -61,6 +61,7 @@
           <a href="/about">About Us</a>
           <a href="/transparency">Transparency</a>
           <a href="/projects">Projects</a>
+          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
         </nav>
         <div class="header-actions">
           {% if user_email %}
@@ -149,7 +150,7 @@
           <div class="section-heading reveal">
             <div>
               <p class="eyebrow">Featured campaigns</p>
-              <h2>Support individual people and families with clear, immediate needs.</h2>
+              <h2>Small spark,<br />firefly shine –<br />brighten one tomorrow.</h2>
             </div>
           </div>
 

@@ -61,6 +61,7 @@
           <a href="/about">About Us</a>
           <a href="/transparency">Transparency</a>
           <a href="/projects">Projects</a>
+          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
         </nav>
         <div class="header-actions">
           {% if user_email %}
