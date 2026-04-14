@@ -179,6 +179,7 @@ h3 {
   position: sticky;
   top: 14px;
   z-index: 10;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -189,6 +190,7 @@ h3 {
   border: 1px solid var(--border);
   border-radius: 999px;
   box-shadow: 0 12px 30px rgba(67, 50, 25, 0.08);
+  overflow: visible;
 }
 
 .brand {
@@ -276,6 +278,7 @@ h3 {
 
 .user-menu {
   position: relative;
+  z-index: 120;
 }
 
 .user-avatar-button {
@@ -349,6 +352,7 @@ h3 {
   border: 1px solid rgba(48, 39, 29, 0.1);
   border-radius: 18px;
   box-shadow: 0 18px 44px rgba(67, 50, 25, 0.12);
+  z-index: 140;
 }
 
 .user-dropdown-name {
@@ -2684,6 +2688,8 @@ section {
     position: static;
     padding: 18px;
     border-radius: 28px;
+    z-index: 40;
+    overflow: visible;
   }
 
   .header-actions,
@@ -2698,6 +2704,24 @@ section {
   .hero-actions,
   .account-actions {
     flex-direction: column;
+  }
+
+  .header-actions {
+    position: relative;
+    align-items: stretch;
+    z-index: 60;
+  }
+
+  .user-menu {
+    align-self: flex-end;
+  }
+
+  .user-dropdown {
+    top: calc(100% + 12px);
+    right: 0;
+    left: auto;
+    width: min(240px, calc(100vw - 40px));
+    max-width: calc(100vw - 40px);
   }
 
   .header-spacer {
