@@ -1,6 +1,6 @@
 # U1-5 BCE Mapping
 
-This document lists only the currently implemented `U1-5` user-story methods and where they appear in the codebase.
+This version lists only real method/function definition lines.
 
 Scope:
 
@@ -10,64 +10,53 @@ Scope:
 - `U4 Update Profile`
 - `U5 Change Password`
 
-The file and line references below cover only methods that belong to those user stories.
+Notes:
+
+- Only actual `def` or `function` definitions are listed.
+- Conceptual BCE boundary actions such as `EnterUsername()` or `DisplayLoginResult()` are not repeated unless there is a real code definition for them.
 
 ## U1 Register
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `RegisterPage` | `templates/auth.html:114-141`, `static/auth.js:204-280` | `EnterUsername()`, `EnterEmail()`, `EnterPassword()`, `RequestVerificationCode()`, `EnterVerificationCode()`, `SubmitRegistration()`, `DisplayRegistrationResult()` |
-| `AuthController` | `main.py:1485-1568` | `ValidateRegistrationInput()` `main.py:1485`, `CheckEmail()` `main.py:1507`, `SendVerificationEmail()` `main.py:1513`, `VerifyEmailAddress()` `main.py:1518`, `RequestVerificationCode()` `main.py:1523`, `ValidationVerificationCode()` `main.py:1533`, `CreateAccount()` `main.py:1538` |
-| `UserAccount` | `main.py:130-158` | `CreateUser()` `main.py:130`, `SaveUser()` `main.py:141`, `CheckEmail()` `main.py:149` |
-| `EmailVerification` | `main.py:94-116` | `GenerateCode()` `main.py:96`, `StoreCode()` `main.py:101`, `CheckCode()` `main.py:108` |
+| BCE Class | Method definitions |
+|---|---|
+| `RegisterPage` | `auth_page()` `routers/user.py:99`, `handleRegister()` `static/auth.js:204`, `handleSendCode()` `static/auth.js:263` |
+| `AuthController` | `ValidateRegistrationInput()` `services/user_service.py:430`, `CheckEmail()` `services/user_service.py:451`, `SendVerificationEmail()` `services/user_service.py:456`, `VerifyEmailAddress()` `services/user_service.py:460`, `RequestVerificationCode()` `services/user_service.py:464`, `ValidationVerificationCode()` `services/user_service.py:472`, `CreateAccount()` `services/user_service.py:476` |
+| `UserAccount` | `CreateUser()` `models/user.py:23`, `SaveUser()` `models/user.py:34`, `CheckEmail()` `models/user.py:42` |
+| `EmailVerification` | `GenerateCode()` `services/user_service.py:350`, `StoreCode()` `services/user_service.py:354`, `CheckCode()` `services/user_service.py:375` |
 
 ## U2 Login
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `LoginPage` | `templates/auth.html:95-112`, `static/auth.js:176-201` | `EnterEmail()`, `EnterPassword()`, `SubmitLogin()`, `DisplayLoginResult()` |
-| `AuthController` | `main.py:1569-1603` | `ValidateCredentials()` `main.py:1569`, `CreateSession()` `main.py:1577`, `Login()` `main.py:1597` |
-| `UserAccount` | `main.py:145-158` | `GetUserByEmail()` `main.py:145`, `CheckPassword()` `main.py:153` |
-| `UserSession` | `main.py:320-339` | `CreateSession()` `main.py:320`, `StoreSession()` `main.py:329` |
-| `AuthenticationToken` | `main.py:355-370` | `CreateToken()` `main.py:355`, `FindToken()` `main.py:364`, `RevokeToken()` `main.py:370` |
+| BCE Class | Method definitions |
+|---|---|
+| `LoginPage` | `auth_page()` `routers/user.py:99`, `handleLogin()` `static/auth.js:177` |
+| `AuthController` | `ValidateCredentials()` `services/user_service.py:506`, `CreateSession()` `services/user_service.py:513`, `Login()` `services/user_service.py:530` |
+| `UserAccount` | `GetUserByEmail()` `models/user.py:38`, `CheckPassword()` `models/user.py:46` |
+| `UserSession` | `CreateSession()` `models/user.py:208`, `StoreSession()` `models/user.py:219` |
+| `AuthenticationToken` | `CreateToken()` `models/user.py:244`, `FindToken()` `models/user.py:255`, `RevokeToken()` `models/user.py:261` |
 
 ## U3 Logout
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `DashboardPage` | `templates/index.html`, `templates/about.html`, `templates/projects.html`, `templates/profile.html`, `templates/settings.html` | Shared user dropdown `Log Out` action in the authenticated navigation |
-| `SessionController` | `main.py:1607-1639` | `RequestLogout()` `main.py:1607`, `Logout()` `main.py:1612`, `TerminateSession()` `main.py:1619`, `ClearAuthentication()` `main.py:1636` |
-| `UserSession` | `main.py:333-339` | `FindSession()` `main.py:333`, `InvalidateSession()` `main.py:339` |
-| `AuthenticationToken` | `main.py:364-370` | `FindToken()` `main.py:364`, `RevokeToken()` `main.py:370` |
+| BCE Class | Method definitions |
+|---|---|
+| `DashboardPage` | `logout()` `routers/user.py:118` |
+| `SessionController` | `RequestLogout()` `services/user_service.py:538`, `Logout()` `services/user_service.py:542`, `TerminateSession()` `services/user_service.py:548`, `ClearAuthentication()` `services/user_service.py:564` |
+| `UserSession` | `FindSession()` `models/user.py:223`, `InvalidateSession()` `models/user.py:229` |
+| `AuthenticationToken` | `FindToken()` `models/user.py:255`, `RevokeToken()` `models/user.py:261` |
 
 ## U4 Update Profile
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `ProfilePage` | `templates/profile.html:91-223`, `static/site.js:149-214` | `ViewProfile()`, `EditUsername()`, `EditContactDetails()`, `SubmitProfileUpdate()`, `DisplayUpdateResult()` |
-| `ProfileController` | `main.py:1644-1818` | `ViewCurrentProfile()` `main.py:1644`, `GetProfile()` `main.py:1649`, `ValidateProfileInput()` `main.py:1681`, `UpdateProfile()` `main.py:1714`, `SaveProfileChanges()` `main.py:1755` |
-| `UserProfile` | `main.py:202-242` | `GetProfileDetails()` `main.py:202`, `UpdateProfileDetails()` `main.py:206`, `SaveProfile()` `main.py:242` |
-| `UserAccount` | `main.py:158` | `GetUserAccount()` `main.py:158` |
+| BCE Class | Method definitions |
+|---|---|
+| `ProfilePage` | `profile_page()` `routers/user.py:34` |
+| `ProfileController` | `ViewCurrentProfile()` `services/user_service.py:570`, `GetProfile()` `services/user_service.py:574`, `ValidateProfileInput()` `services/user_service.py:605`, `UpdateProfile()` `services/user_service.py:637`, `SaveProfileChanges()` `services/user_service.py:677` |
+| `UserProfile` | `GetProfileDetails()` `models/user.py:92`, `UpdateProfileDetails()` `models/user.py:96`, `SaveProfile()` `models/user.py:132` |
+| `UserAccount` | `GetUserAccount()` `models/user.py:51` |
 
 ## U5 Change Password
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `ChangePasswordPage` | `templates/settings.html:95-150`, `static/site.js:266-294` | `EnterCurrentPassword()`, `EnterNewPassword()`, `ConfirmNewPassword()`, `SubmitPasswordChange()`, `DisplayChangeResult()` |
-| `PasswordController` | `main.py:1824-1961` | `ValidationCurrentPassword()` `main.py:1824`, `ValidateNewPassword()` `main.py:1836`, `ValidatePasswordPolicy()` `main.py:1865`, `SendPasswordChangeNotification()` `main.py:1881`, `UpdatePassword()` `main.py:1891` |
-| `UserProfile` | `main.py:268-272` | `GetPasswordHash()` `main.py:268`, `UpdatePasswordHash()` `main.py:272` |
-| `PasswordHistory` | `main.py:289-300` | `StorePasswordHistory()` `main.py:289`, `GetPreviousPasswords()` `main.py:300` |
-
-## U1-5 Routes
-
-| Route | File / Line | Purpose |
-|---|---|---|
-| `GET /auth` | `main.py:3511-3528` | Register and login boundary page |
-| `GET /profile` | `main.py:3444-3481` | Profile boundary page |
-| `GET /settings` | `main.py:3484-3508` | Change-password boundary page |
-| `GET /logout` | `main.py:3529-3562` | Logout |
-| `POST /api/auth/send-code` | `main.py:3564-3570` | Send registration verification code |
-| `POST /api/auth/register` | `main.py:3572-3589` | Register account |
-| `POST /api/auth/login` | `main.py:3591-3598` | Login |
-| `POST /api/profile/update` | `main.py:3629-3657` | Update profile information |
-| `POST /api/settings/change-password` | `main.py:3659-3674` | Change password |
+| BCE Class | Method definitions |
+|---|---|
+| `ChangePasswordPage` | `settings_page()` `routers/user.py:73` |
+| `PasswordController` | `ValidationCurrentPassword()` `services/user_service.py:745`, `ValidateNewPassword()` `services/user_service.py:756`, `ValidatePasswordPolicy()` `services/user_service.py:784`, `SendPasswordChangeNotification()` `services/user_service.py:799`, `UpdatePassword()` `services/user_service.py:808` |
+| `UserProfile` | `GetPasswordHash()` `models/user.py:158`, `UpdatePasswordHash()` `models/user.py:162` |
+| `PasswordHistory` | `StorePasswordHistory()` `models/user.py:178`, `GetPreviousPasswords()` `models/user.py:189` |

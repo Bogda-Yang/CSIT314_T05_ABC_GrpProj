@@ -28,7 +28,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Compile backend
-        run: python -m py_compile main.py
+        run: python -m py_compile app.py core/*.py models/*.py services/*.py routers/*.py
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

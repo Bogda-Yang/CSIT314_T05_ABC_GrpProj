@@ -2,4 +2,4 @@
 set -e
 
 cd "$(dirname "$0")"
-python3 -m uvicorn main:app --reload
+python3 -m uvicorn app:app --reload

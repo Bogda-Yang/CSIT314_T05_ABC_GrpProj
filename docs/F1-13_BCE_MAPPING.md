@@ -1,6 +1,6 @@
 # F1-13 BCE Mapping
 
-This document lists only the currently implemented fundraiser-management methods.
+This version lists only real method/function definition lines.
 
 Scope:
 
@@ -18,90 +18,74 @@ Scope:
 
 ## F1 Create Fundraising Campaign
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignManagementPage` | `templates/campaign_create.html:91-124` | `AccessCampaignCreationPage()`, `EnterBasicCampaignInformation()`, `SubmitCampaignCreation()`, `DisplayCreationResult()` |
-| `CampaignController` | `main.py:2042-2077` | `ValidateCampaignInformation()` `main.py:2042`, `CreateCampaign()` `main.py:2059`, `SaveCampaignDraft()` `main.py:2073` |
-| `FundraisingCampaign` | `main.py:396-419` | `CreateCampaign()` `main.py:396`, `SaveCampaignDraft()` `main.py:415`, `GetCampaignDetails()` `main.py:419` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignManagementPage` | `campaign_create_page()` `routers/fundraiser.py:36`, `create_campaign()` `routers/fundraiser.py:117` |
+| `CampaignController` | `ValidateCampaignInformation()` `services/campaign_service.py:307`, `CreateCampaign()` `services/campaign_service.py:323`, `SaveCampaignDraft()` `services/campaign_service.py:336` |
+| `FundraisingCampaign` | `CreateCampaign()` `models/campaign.py:38`, `SaveCampaignDraft()` `models/campaign.py:57`, `GetCampaignDetails()` `models/campaign.py:61` |
 
 ## F2 Edit Fundraising Campaign
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignManagementPage` | `templates/campaign_create.html:126-162`, `templates/campaign_workflow.html:95-188` | `AccessCampaignManagementPage()`, `SelectExistingCampaign()`, `ViewCurrentCampaignDetails()`, `EditCampaignInformation()`, `SubmitCampaignUpdate()`, `DisplayUpdateResult()` |
-| `CampaignController` | `main.py:2078-2109` | `GetCampaignDetails()` `main.py:2078`, `ValidateUpdatedInformation()` `main.py:2086`, `UpdateCampaign()` `main.py:2091`, `SaveCampaignChanges()` `main.py:2106` |
-| `FundraisingCampaign` | `main.py:419-459` | `GetCampaignDetails()` `main.py:419`, `UpdateCampaign()` `main.py:448`, `SaveCampaignChanges()` `main.py:459` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignManagementPage` | `campaign_management_page()` `routers/fundraiser.py:68`, `update_campaign_basic_information()` `routers/fundraiser.py:145` |
+| `CampaignController` | `GetCampaignDetails()` `services/campaign_service.py:340`, `ValidateUpdatedInformation()` `services/campaign_service.py:347`, `UpdateCampaign()` `services/campaign_service.py:351`, `SaveCampaignChanges()` `services/campaign_service.py:365` |
+| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:61`, `UpdateCampaign()` `models/campaign.py:90`, `SaveCampaignChanges()` `models/campaign.py:101` |
 
 ## F3 Delete Fundraising Campaign
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignManagementPage` | `templates/campaign_workflow.html:366-379` | `AccessCampaignManagementPage()`, `SelectCampaign()`, `ReviewCampaignDetails()`, `ConfirmCampaignDeletion()`, `DisplayDeletionResult()` |
-| `CampaignController` | `main.py:2111-2120` | `DeleteCampaign()` `main.py:2111`, `RemoveCampaign()` `main.py:2120` |
-| `FundraisingCampaign` | `main.py:469` | `DeleteCampaign()` `main.py:469` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignManagementPage` | `campaign_management_page()` `routers/fundraiser.py:68`, `delete_campaign()` `routers/fundraiser.py:355` |
+| `CampaignController` | `DeleteCampaign()` `services/campaign_service.py:369`, `RemoveCampaign()` `services/campaign_service.py:377` |
+| `FundraisingCampaign` | `DeleteCampaign()` `models/campaign.py:111` |
 
 ## F4 Set Fundraising Goal
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignGoalPage` | `templates/campaign_workflow.html:190-212` | `AccessCampaignGoalSection()`, `EnterGoalAmount()`, `SubmitGoalUpdate()`, `DisplayGoalUpdateResult()` |
-| `CampaignGoalController` | `main.py:2138-2163` | `ValidateGoalInformation()` `main.py:2138`, `SetFundraisingGoal()` `main.py:2150`, `SaveFundraisingGoal()` `main.py:2163` |
-| `CampaignGoal` | `main.py:636-650` | `SetGoal()` `main.py:636`, `SaveGoal()` `main.py:646`, `GetGoalDetails()` `main.py:650` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignGoalPage` | `set_campaign_goal()` `routers/fundraiser.py:176` |
+| `CampaignGoalController` | `ValidateGoalInformation()` `services/campaign_service.py:392`, `SetFundraisingGoal()` `services/campaign_service.py:403`, `SaveFundraisingGoal()` `services/campaign_service.py:415` |
+| `CampaignGoal` | `SetGoal()` `models/campaign.py:273`, `SaveGoal()` `models/campaign.py:283`, `GetGoalDetails()` `models/campaign.py:287` |
 
 ## F5 Add Campaign Description
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignDescriptionPage` | `templates/campaign_workflow.html:214-236` | `AccessCampaignDescriptionSection()`, `EnterCampaignDescription()`, `SubmitDescriptionUpdate()`, `DisplayDescriptionUpdateResult()` |
-| `CampaignDescriptionController` | `main.py:2171-2200` | `ValidateDescriptionContent()` `main.py:2171`, `AddCampaignDescription()` `main.py:2187`, `SaveCampaignDescription()` `main.py:2200` |
-| `CampaignDescription` | `main.py:657-671` | `SetDescription()` `main.py:657`, `SaveDescription()` `main.py:667`, `GetDescriptionDetails()` `main.py:671` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignDescriptionPage` | `set_campaign_description()` `routers/fundraiser.py:206` |
+| `CampaignDescriptionController` | `ValidateDescriptionContent()` `services/campaign_service.py:421`, `AddCampaignDescription()` `services/campaign_service.py:436`, `SaveCampaignDescription()` `services/campaign_service.py:448` |
+| `CampaignDescription` | `SetDescription()` `models/campaign.py:293`, `SaveDescription()` `models/campaign.py:303`, `GetDescriptionDetails()` `models/campaign.py:307` |
 
 ## F6 Upload Campaign Images
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignImagePage` | `templates/campaign_workflow.html:238-300` | `AccessCampaignImageSection()`, `SelectImageFiles()`, `UploadImages()`, `DisplayUploadResult()` |
-| `CampaignImageController` | `main.py:2208-2309` | `ValidateImageFormatAndSize()` `main.py:2208`, `UploadCampaignImages()` `main.py:2252`, `SaveImageRecords()` `main.py:2298` |
-| `CampaignImage` | `main.py:546-563` | `StoreImages()` `main.py:546`, `SaveImageRecords()` `main.py:559`, `GetImageDetails()` `main.py:563` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignImagePage` | `upload_campaign_images()` `routers/fundraiser.py:236`, `delete_campaign_image()` `routers/fundraiser.py:266` |
+| `CampaignImageController` | `ValidateImageFormatAndSize()` `services/campaign_service.py:454`, `UploadCampaignImages()` `services/campaign_service.py:497`, `SaveImageRecords()` `services/campaign_service.py:542`, `DeleteCampaignImage()` `services/campaign_service.py:546` |
+| `CampaignImage` | `StoreImages()` `models/campaign.py:187`, `SaveImageRecords()` `models/campaign.py:198`, `GetImageDetails()` `models/campaign.py:202` |
 
 ## F7 Set Campaign Deadline
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignDeadlinePage` | `templates/campaign_workflow.html:302-324` | `AccessCampaignDeadlineSection()`, `SelectDeadlineDate()`, `SubmitDeadlineUpdate()`, `DisplayDeadlineUpdateResult()` |
-| `CampaignDeadlineController` | `main.py:2335-2368` | `ValidateDeadline()` `main.py:2335`, `SetCampaignDeadline()` `main.py:2355`, `SaveCampaignDeadline()` `main.py:2368` |
-| `CampaignDeadline` | `main.py:678-692` | `SetDeadline()` `main.py:678`, `SaveDeadline()` `main.py:688`, `GetDeadlineDetails()` `main.py:692` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignDeadlinePage` | `set_campaign_deadline()` `routers/fundraiser.py:296` |
+| `CampaignDeadlineController` | `ValidateDeadline()` `services/campaign_service.py:576`, `SetCampaignDeadline()` `services/campaign_service.py:595`, `SaveCampaignDeadline()` `services/campaign_service.py:607` |
+| `CampaignDeadline` | `SetDeadline()` `models/campaign.py:313`, `SaveDeadline()` `models/campaign.py:323`, `GetDeadlineDetails()` `models/campaign.py:327` |
 
 ## F8 Submit Campaign for Approval
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignSubmissionPage` | `templates/campaign_workflow.html:326-364` | `AccessCampaignSubmissionPage()`, `ReviewCampaignInformation()`, `SubmitCampaign()`, `DisplaySubmissionResult()` |
-| `CampaignApprovalController` | `main.py:2376-2415` | `ValidateSubmissionRequirements()` `main.py:2376`, `SubmitCampaignForApproval()` `main.py:2397`, `UpdateCampaignStatusToPending()` `main.py:2410` |
-| `CampaignStatus` | `main.py:699-717` | `SetPending()` `main.py:699`, `GetStatus()` `main.py:717` |
-| `FundraisingCampaign` | `main.py:419-514` | `GetCampaignDetails()` `main.py:419`, `UpdateCampaignStatus()` `main.py:514` |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignSubmissionPage` | `submit_campaign_for_approval()` `routers/fundraiser.py:326` |
+| `CampaignApprovalController` | `ValidateSubmissionRequirements()` `services/campaign_service.py:613`, `SubmitCampaignForApproval()` `services/campaign_service.py:633`, `UpdateCampaignStatusToPending()` `services/campaign_service.py:645` |
+| `CampaignStatus` | `SetPending()` `models/campaign.py:333`, `GetStatus()` `models/campaign.py:351` |
+| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:61`, `UpdateCampaignStatus()` `models/campaign.py:156` |
 
 ## F9 View Approval Status of Campaign
 
-| BCE Class | File / Line | Methods / Line |
-|---|---|---|
-| `CampaignSubmissionPage` | `templates/campaign_workflow.html:326-350` | `AccessCampaignManagementPage()`, `ViewApprovalStatusDetails()`, `RefreshApprovalStatus()` |
-| `CampaignApprovalController` | `main.py:2416-2447` | `RetrieveCampaignStatus()` `main.py:2416`, `GetApprovalStatusDetails()` `main.py:2424` |
-| `CampaignStatus` | `main.py:717-727` | `GetStatus()` `main.py:717`, `GetStatusDetails()` `main.py:721` |
-| `FundraisingCampaign` | `main.py:419` | `GetCampaignDetails()` `main.py:419` |
-
-## F1-9 Routes
-
-| Route | File / Line | Purpose |
-|---|---|---|
-| `GET /projects/create-campaign` | `main.py:2891-2921` | Access fundraiser campaign entry page |
-| `GET /projects/manage/{campaign_id}` | `main.py:2924-2971` | Open selected campaign workflow |
-| `POST /projects/create` | `main.py:3089-3115` | Create a new fundraising campaign draft |
-| `POST /projects/{campaign_id}/basic` | `main.py:3117-3145` | Update basic campaign information |
-| `POST /projects/{campaign_id}/goal` | `main.py:3148-3175` | Set or update campaign goal |
-| `POST /projects/{campaign_id}/description` | `main.py:3178-3205` | Set or update campaign description |
-| `POST /projects/{campaign_id}/images` | `main.py:3208-3235` | Upload campaign images |
-| `POST /projects/{campaign_id}/images/{image_id}/delete` | `main.py:3238-3265` | Delete a campaign image |
-| `POST /projects/{campaign_id}/deadline` | `main.py:3268-3295` | Set or update campaign deadline |
-| `POST /projects/{campaign_id}/submit` | `main.py:3298-3325` | Submit campaign for approval |
-| `POST /projects/{campaign_id}/delete` | `main.py:3327-3352` | Delete a fundraiser-owned campaign |
+| BCE Class | Method definitions |
+|---|---|
+| `CampaignSubmissionPage` | `campaign_management_page()` `routers/fundraiser.py:68` |
+| `CampaignApprovalController` | `RetrieveCampaignStatus()` `services/campaign_service.py:650`, `GetApprovalStatusDetails()` `services/campaign_service.py:657` |
+| `CampaignStatus` | `GetStatus()` `models/campaign.py:351`, `GetStatusDetails()` `models/campaign.py:355` |
+| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:61` |
