@@ -14,6 +14,7 @@ const campaignBasicForm = document.querySelector("#campaign-basic form");
 const campaignGoalForm = document.querySelector("#campaign-goal form");
 const campaignDescriptionForm = document.querySelector("#campaign-description form");
 const campaignDeadlineForm = document.querySelector("#campaign-deadline form");
+const impactRechargeModal = document.querySelector("#impact-recharge-modal");
 
 // 校验密码规则：至少 6 位，且同时包含字母和数字
 function validatePasswordPolicy(password) {
@@ -89,6 +90,11 @@ function setAccountMessage(node, text, type = "") {
   }
   node.textContent = text;
   node.className = `account-message ${type}`.trim();
+}
+
+function formatUsdAmount(value) {
+  const numericValue = Number(value) || 0;
+  return `$${numericValue.toLocaleString("en-US")}`;
 }
 
 // 统一发送文件上传请求
@@ -295,6 +301,8 @@ if (changePasswordForm) {
 
 const teamModal = document.querySelector("#team-modal");
 const publicCampaignModal = document.querySelector("#public-campaign-modal");
+const fundraiserAnalyticsModal = document.querySelector("#fundraiser-analytics-modal");
+const impactDonationModal = document.querySelector("#impact-donation-modal");
 
 // 打开团队成员简介弹窗
 if (teamModal) {
@@ -341,21 +349,48 @@ if (teamModal) {
 
 // 打开公开筹款项目详情弹窗
 if (publicCampaignModal) {
+  const currentUserEmail = (document.body.dataset.currentUserEmail || "").trim().toLowerCase();
   const projectButtons = document.querySelectorAll(".public-campaign-open");
   const modalTitle = document.querySelector("#public-campaign-modal-title");
   const modalCategory = document.querySelector("#public-campaign-modal-category");
   const modalOwner = document.querySelector("#public-campaign-modal-owner");
   const modalGoal = document.querySelector("#public-campaign-modal-goal");
-  const modalDeadline = document.querySelector("#public-campaign-modal-deadline");
+  const modalRaised = document.querySelector("#public-campaign-modal-raised");
+  const modalProgress = document.querySelector("#public-campaign-modal-progress");
+  const modalFundingStatus = document.querySelector("#public-campaign-modal-funding-status");
+  const modalDeadlineStatus = document.querySelector("#public-campaign-modal-deadline-status");
   const modalPublished = document.querySelector("#public-campaign-modal-published");
   const modalDescription = document.querySelector("#public-campaign-modal-description");
   const modalImage = document.querySelector("#public-campaign-modal-image");
   const modalPlaceholder = document.querySelector("#public-campaign-modal-placeholder");
   const modalPrev = document.querySelector("#public-campaign-modal-prev");
   const modalNext = document.querySelector("#public-campaign-modal-next");
+  const supportForm = document.querySelector("#public-campaign-support-form");
+  const supportMessage = document.querySelector("#public-campaign-support-message");
+  const favouriteForm = document.querySelector("#public-campaign-favourite-form");
+  const favouriteButton = document.querySelector("#public-campaign-favourite-button");
+  const supportConfirmModal = document.querySelector("#support-confirm-modal");
+  const supportConfirmApproveButton = document.querySelector("#support-confirm-approve");
+  const supportConfirmCancelButton = document.querySelector("#support-confirm-cancel");
+  const supportConfirmCloseTriggers = supportConfirmModal?.querySelectorAll(
+    "[data-close-support-confirm='true']"
+  );
+  const projectsFlashMessage = document.querySelector(".projects-flash");
   const closeTriggers = publicCampaignModal.querySelectorAll("[data-close-project-modal='true']");
   let currentProjectImages = [];
   let currentProjectImageIndex = 0;
+  let activeProjectButton = null;
+  let supportConfirmationApproved = false;
+
+  const syncProjectModalQuery = (projectId = "") => {
+    const currentUrl = new URL(window.location.href);
+    if (projectId) {
+      currentUrl.searchParams.set("campaign_id", String(projectId));
+    } else {
+      currentUrl.searchParams.delete("campaign_id");
+    }
+    window.history.replaceState({}, "", currentUrl.toString());
+  };
 
   const renderProjectModalImage = () => {
     const imageUrl = currentProjectImages[currentProjectImageIndex] || "";
@@ -382,6 +417,10 @@ if (publicCampaignModal) {
   };
 
   const openProjectModal = (button) => {
+    activeProjectButton = button;
+    supportConfirmationApproved = false;
+    const ownerEmail = (button.dataset.projectOwnerEmail || "").trim().toLowerCase();
+    const isOwnCampaign = Boolean(currentUserEmail && ownerEmail && currentUserEmail === ownerEmail);
     if (modalTitle) {
       modalTitle.textContent = button.dataset.projectTitle || "Campaign";
     }
@@ -394,8 +433,17 @@ if (publicCampaignModal) {
     if (modalGoal) {
       modalGoal.textContent = button.dataset.projectGoal || "Goal pending";
     }
-    if (modalDeadline) {
-      modalDeadline.textContent = button.dataset.projectDeadline || "No deadline published";
+    if (modalRaised) {
+      modalRaised.textContent = button.dataset.projectRaised || "$0 raised";
+    }
+    if (modalProgress) {
+      modalProgress.textContent = button.dataset.projectProgress || "0%";
+    }
+    if (modalFundingStatus) {
+      modalFundingStatus.textContent = button.dataset.projectFundingStatus || "Funding in progress";
+    }
+    if (modalDeadlineStatus) {
+      modalDeadlineStatus.textContent = button.dataset.projectDeadlineStatus || "No deadline";
     }
     if (modalPublished) {
       modalPublished.textContent = button.dataset.projectPublished || "Ready for support";
@@ -418,13 +466,71 @@ if (publicCampaignModal) {
     currentProjectImageIndex = 0;
     renderProjectModalImage();
 
+    if (favouriteForm && favouriteButton) {
+      const projectId = button.dataset.projectId;
+      const isFavourite = button.dataset.projectIsFavourite === "true";
+      favouriteForm.action = isFavourite
+        ? `/projects/${projectId}/favourites/remove`
+        : `/projects/${projectId}/favourites/save`;
+      favouriteButton.textContent = isFavourite
+        ? "Remove from favourites"
+        : "Save to favourites";
+      favouriteButton.className = isFavourite ? "ghost-button" : "solid-button";
+    }
+    if (supportForm) {
+      supportForm.action = `/projects/${button.dataset.projectId}/support`;
+      supportForm.hidden = isOwnCampaign;
+    }
+    if (supportMessage) {
+      if (isOwnCampaign) {
+        setAccountMessage(
+          supportMessage,
+          "You cannot support your own campaign.",
+          "error"
+        );
+      } else if (projectsFlashMessage?.textContent?.trim()) {
+        setAccountMessage(
+          supportMessage,
+          projectsFlashMessage.textContent.trim(),
+          projectsFlashMessage.classList.contains("error") ? "error" : "success"
+        );
+      } else {
+        setAccountMessage(supportMessage, "");
+      }
+    }
+
     publicCampaignModal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
+    syncProjectModalQuery(button.dataset.projectId || "");
+
+    if (button.dataset.projectId) {
+      fetch(`/api/projects/${button.dataset.projectId}/view`, {
+        method: "POST",
+      }).catch(() => {});
+    }
   };
 
   const closeProjectModal = () => {
     publicCampaignModal.setAttribute("hidden", "");
+    closeSupportConfirmModal();
     document.body.style.overflow = "";
+    activeProjectButton = null;
+    supportConfirmationApproved = false;
+    syncProjectModalQuery();
+  };
+
+  const openSupportConfirmModal = () => {
+    if (!supportConfirmModal) {
+      return;
+    }
+    supportConfirmModal.removeAttribute("hidden");
+  };
+
+  const closeSupportConfirmModal = () => {
+    if (!supportConfirmModal) {
+      return;
+    }
+    supportConfirmModal.setAttribute("hidden", "");
   };
 
   projectButtons.forEach((button) => {
@@ -433,6 +539,40 @@ if (publicCampaignModal) {
 
   closeTriggers.forEach((node) => {
     node.addEventListener("click", closeProjectModal);
+  });
+
+  supportConfirmCloseTriggers?.forEach((node) => {
+    node.addEventListener("click", () => {
+      supportConfirmationApproved = false;
+      closeSupportConfirmModal();
+    });
+  });
+
+  supportConfirmCancelButton?.addEventListener("click", () => {
+    supportConfirmationApproved = false;
+    closeSupportConfirmModal();
+  });
+
+  supportConfirmApproveButton?.addEventListener("click", () => {
+    if (!supportForm) {
+      return;
+    }
+    supportConfirmationApproved = true;
+    closeSupportConfirmModal();
+    supportForm.requestSubmit();
+  });
+
+  supportForm?.addEventListener("submit", (event) => {
+    const amountInput = supportForm.elements.amount;
+    const cleanAmount = Number(amountInput?.value || 0);
+
+    if (!Number.isFinite(cleanAmount) || cleanAmount <= 1000 || supportConfirmationApproved) {
+      supportConfirmationApproved = false;
+      return;
+    }
+
+    event.preventDefault();
+    openSupportConfirmModal();
   });
 
   modalPrev?.addEventListener("click", () => {
@@ -473,7 +613,264 @@ if (publicCampaignModal) {
     }
 
     if (event.key === "Escape") {
+      if (supportConfirmModal && !supportConfirmModal.hasAttribute("hidden")) {
+        supportConfirmationApproved = false;
+        closeSupportConfirmModal();
+        return;
+      }
       closeProjectModal();
+    }
+  });
+
+  const requestedCampaignId = new URLSearchParams(window.location.search).get("campaign_id");
+  if (requestedCampaignId) {
+    const targetButton = document.querySelector(
+      `.public-campaign-open[data-project-id="${requestedCampaignId}"]`
+    );
+    if (targetButton) {
+      openProjectModal(targetButton);
+    }
+  }
+}
+
+if (fundraiserAnalyticsModal) {
+  const openButtons = document.querySelectorAll(".fundraiser-analytics-open");
+  const closeTriggers = fundraiserAnalyticsModal.querySelectorAll("[data-close-fundraiser-analytics='true']");
+  const modalTitle = document.querySelector("#fundraiser-analytics-title");
+  const modalCategory = document.querySelector("#fundraiser-analytics-category");
+  const modalStatus = document.querySelector("#fundraiser-analytics-status");
+  const modalViews = document.querySelector("#fundraiser-analytics-views");
+  const modalShortlists = document.querySelector("#fundraiser-analytics-shortlists");
+  const modalRaised = document.querySelector("#fundraiser-analytics-raised");
+  const modalGoal = document.querySelector("#fundraiser-analytics-goal");
+  const modalProgress = document.querySelector("#fundraiser-analytics-progress");
+  const modalFundingStatus = document.querySelector("#fundraiser-analytics-funding-status");
+  const modalDeadlineStatus = document.querySelector("#fundraiser-analytics-deadline-status");
+  const modalLatestViewed = document.querySelector("#fundraiser-analytics-latest-viewed");
+  const modalLatestShortlisted = document.querySelector("#fundraiser-analytics-latest-shortlisted");
+  const modalCreated = document.querySelector("#fundraiser-analytics-created");
+  const modalUpdated = document.querySelector("#fundraiser-analytics-updated");
+  const modalManageLink = document.querySelector("#fundraiser-analytics-manage-link");
+
+  const closeModal = () => {
+    fundraiserAnalyticsModal.setAttribute("hidden", "");
+    document.body.style.overflow = "";
+  };
+
+  const openModal = (button) => {
+    if (modalTitle) modalTitle.textContent = button.dataset.fundraiserTitle || "Campaign";
+    if (modalCategory) modalCategory.textContent = button.dataset.fundraiserCategory || "Other";
+    if (modalStatus) modalStatus.textContent = button.dataset.fundraiserStatus || "Draft";
+    if (modalViews) modalViews.textContent = button.dataset.fundraiserViews || "0";
+    if (modalShortlists) modalShortlists.textContent = button.dataset.fundraiserShortlists || "0";
+    if (modalRaised) modalRaised.textContent = button.dataset.fundraiserRaised || "$0";
+    if (modalGoal) modalGoal.textContent = button.dataset.fundraiserGoal || "Goal pending";
+    if (modalProgress) modalProgress.textContent = button.dataset.fundraiserProgress || "0%";
+    if (modalFundingStatus) {
+      modalFundingStatus.textContent = button.dataset.fundraiserFundingStatus || "Funding in progress";
+    }
+    if (modalDeadlineStatus) {
+      modalDeadlineStatus.textContent = button.dataset.fundraiserDeadlineStatus || "No deadline";
+    }
+    if (modalLatestViewed) {
+      modalLatestViewed.textContent = button.dataset.fundraiserLatestViewed || "No views yet";
+    }
+    if (modalLatestShortlisted) {
+      modalLatestShortlisted.textContent =
+        button.dataset.fundraiserLatestShortlisted || "No shortlists yet";
+    }
+    if (modalCreated) modalCreated.textContent = button.dataset.fundraiserCreated || "";
+    if (modalUpdated) modalUpdated.textContent = button.dataset.fundraiserUpdated || "";
+    if (modalManageLink) {
+      modalManageLink.href = button.dataset.fundraiserManageUrl || "/your-fundraisers";
+    }
+
+    fundraiserAnalyticsModal.removeAttribute("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  openButtons.forEach((button) => {
+    button.addEventListener("click", () => openModal(button));
+  });
+  closeTriggers.forEach((node) => node.addEventListener("click", closeModal));
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !fundraiserAnalyticsModal.hasAttribute("hidden")) {
+      closeModal();
+    }
+  });
+}
+
+if (impactDonationModal) {
+  const openButtons = document.querySelectorAll(".donation-history-open");
+  const closeTriggers = impactDonationModal.querySelectorAll("[data-close-impact-donation='true']");
+  const modalTitle = document.querySelector("#impact-donation-title");
+  const modalCategory = document.querySelector("#impact-donation-category");
+  const modalAmount = document.querySelector("#impact-donation-amount");
+  const modalDate = document.querySelector("#impact-donation-date");
+  const modalFundraiser = document.querySelector("#impact-donation-fundraiser");
+  const modalRaised = document.querySelector("#impact-donation-raised");
+  const modalGoal = document.querySelector("#impact-donation-goal");
+  const modalProgress = document.querySelector("#impact-donation-progress");
+  const modalFundingStatus = document.querySelector("#impact-donation-funding-status");
+  const modalDeadlineStatus = document.querySelector("#impact-donation-deadline-status");
+  const modalDetailLink = document.querySelector("#impact-donation-detail-link");
+
+  const closeModal = () => {
+    impactDonationModal.setAttribute("hidden", "");
+    document.body.style.overflow = "";
+  };
+
+  const openModal = (button) => {
+    if (modalTitle) modalTitle.textContent = button.dataset.donationTitle || "Donation";
+    if (modalCategory) modalCategory.textContent = button.dataset.donationCategory || "Other";
+    if (modalAmount) modalAmount.textContent = button.dataset.donationAmount || "$0";
+    if (modalDate) modalDate.textContent = button.dataset.donationDate || "";
+    if (modalFundraiser) modalFundraiser.textContent = button.dataset.donationFundraiser || "Unknown";
+    if (modalRaised) modalRaised.textContent = button.dataset.donationRaised || "$0";
+    if (modalGoal) modalGoal.textContent = button.dataset.donationGoal || "Goal pending";
+    if (modalProgress) modalProgress.textContent = button.dataset.donationProgress || "0%";
+    if (modalFundingStatus) {
+      modalFundingStatus.textContent = button.dataset.donationFundingStatus || "Funding in progress";
+    }
+    if (modalDeadlineStatus) {
+      modalDeadlineStatus.textContent = button.dataset.donationDeadlineStatus || "No deadline";
+    }
+    if (modalDetailLink) {
+      modalDetailLink.href = button.dataset.donationDetailUrl || "/projects";
+    }
+
+    impactDonationModal.removeAttribute("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  openButtons.forEach((button) => {
+    button.addEventListener("click", () => openModal(button));
+  });
+  closeTriggers.forEach((node) => node.addEventListener("click", closeModal));
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !impactDonationModal.hasAttribute("hidden")) {
+      closeModal();
+    }
+  });
+}
+
+// Your Impact 余额充值弹窗与模拟付款
+if (impactRechargeModal) {
+  const openButton = document.querySelector("#impact-recharge-open");
+  const closeTriggers = impactRechargeModal.querySelectorAll("[data-close-impact-recharge='true']");
+  const amountButtons = impactRechargeModal.querySelectorAll(".impact-amount-option");
+  const customAmountInput = document.querySelector("#impact-custom-amount");
+  const confirmAmountButton = document.querySelector("#impact-confirm-amount");
+  const payStep = document.querySelector("#impact-recharge-step-pay");
+  const selectedAmountNode = document.querySelector("#impact-selected-amount");
+  const resultActions = document.querySelector("#impact-payment-result-actions");
+  const successButton = document.querySelector("#impact-payment-success");
+  const failureButton = document.querySelector("#impact-payment-failure");
+  const rechargeMessage = document.querySelector("#impact-recharge-message");
+  const balanceMessage = document.querySelector("#impact-balance-message");
+  const balanceAmountNode = document.querySelector("#impact-balance-amount");
+  let selectedAmount = 0;
+
+  const resetRechargeState = () => {
+    selectedAmount = 0;
+    amountButtons.forEach((button) => button.classList.remove("is-active"));
+    if (customAmountInput) {
+      customAmountInput.value = "";
+    }
+    if (selectedAmountNode) {
+      selectedAmountNode.textContent = formatUsdAmount(0);
+    }
+    if (payStep) {
+      payStep.hidden = true;
+    }
+    setAccountMessage(rechargeMessage, "");
+  };
+
+  const openRechargeModal = () => {
+    resetRechargeState();
+    impactRechargeModal.removeAttribute("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeRechargeModal = () => {
+    impactRechargeModal.setAttribute("hidden", "");
+    document.body.style.overflow = "";
+    resetRechargeState();
+  };
+
+  const setSelectedAmount = (amount) => {
+    selectedAmount = amount;
+    amountButtons.forEach((button) => {
+      button.classList.toggle("is-active", Number(button.dataset.amount) === amount);
+    });
+    if (selectedAmountNode) {
+      selectedAmountNode.textContent = formatUsdAmount(amount);
+    }
+  };
+
+  openButton?.addEventListener("click", openRechargeModal);
+  closeTriggers.forEach((node) => node.addEventListener("click", closeRechargeModal));
+
+  amountButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (customAmountInput) {
+        customAmountInput.value = "";
+      }
+      setSelectedAmount(Number(button.dataset.amount || "0"));
+    });
+  });
+
+  customAmountInput?.addEventListener("input", () => {
+    amountButtons.forEach((button) => button.classList.remove("is-active"));
+    const customValue = Number(customAmountInput.value);
+    selectedAmount = Number.isFinite(customValue) ? customValue : 0;
+    if (selectedAmountNode) {
+      selectedAmountNode.textContent = formatUsdAmount(selectedAmount);
+    }
+  });
+
+  confirmAmountButton?.addEventListener("click", () => {
+    if (!selectedAmount || selectedAmount < 1) {
+      setAccountMessage(
+        rechargeMessage,
+        "Please select or enter an amount of at least $1.",
+        "error"
+      );
+      return;
+    }
+    if (payStep) {
+      payStep.hidden = false;
+    }
+    setAccountMessage(
+      rechargeMessage,
+      "Amount confirmed. Scan the QR code, then choose Success or Failed.",
+      "success"
+    );
+  });
+
+  successButton?.addEventListener("click", async () => {
+    try {
+      setAccountMessage(rechargeMessage, "Applying recharge...");
+      const result = await postJson("/api/impact/recharge", { amount: selectedAmount });
+      if (balanceAmountNode) {
+        balanceAmountNode.textContent = formatUsdAmount(result.balance);
+      }
+      setAccountMessage(balanceMessage, result.message, "success");
+      closeRechargeModal();
+    } catch (error) {
+      setAccountMessage(rechargeMessage, error.message, "error");
+    }
+  });
+
+  failureButton?.addEventListener("click", () => {
+    setAccountMessage(rechargeMessage, "Recharge was not completed. You can try again.", "error");
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !impactRechargeModal.hasAttribute("hidden")) {
+      closeRechargeModal();
     }
   });
 }

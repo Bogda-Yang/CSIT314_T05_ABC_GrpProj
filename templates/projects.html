@@ -41,11 +41,11 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260414-mobile-user-menu-fix-1"
+      href="/static/styles.css?v=20260423-modal-deadline-row-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
-  <body class="projects-flat-background">
+  <body class="projects-flat-background" data-current-user-email="{{ user_email or '' }}">
     <div class="page-shell">
       <header class="site-header">
         <a class="brand" href="/" aria-label="FireflyFund Home">
@@ -57,11 +57,11 @@
           </span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
-          <a href="/">Home</a>
-          <a href="/about">About Us</a>
-          <a href="/transparency">Transparency</a>
-          <a href="/projects">Projects</a>
-          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
+          <a href="/" class="{% if request.url.path == '/' %}is-active{% endif %}">Home</a>
+          <a href="/about" class="{% if request.url.path == '/about' %}is-active{% endif %}">About Us</a>
+          <a href="/transparency" class="{% if request.url.path == '/transparency' %}is-active{% endif %}">Transparency</a>
+          <a href="/projects" class="{% if request.url.path == '/projects' or request.url.path.startswith('/projects/') %}is-active{% endif %}">Projects</a>
+          {% if is_admin %}<a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}">Dashboard</a>{% endif %}
         </nav>
         <div class="header-actions">
           {% if user_email %}
@@ -81,6 +81,9 @@
             <div class="user-dropdown" hidden>
               <div class="user-dropdown-name">{{ username or "User" }}</div>
               <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/your-fundraisers">Your Fundraisers</a>
+              <a class="user-dropdown-link" href="/your-impact">Your Impact</a>
+              <a class="user-dropdown-link" href="/wallet">Wallet</a>
               <a class="user-dropdown-link" href="/settings">Settings</a>
               <a class="user-dropdown-link danger" href="/logout">Log Out</a>
             </div>
@@ -126,13 +129,35 @@
             </details>
             {% endif %}
           </div>
-          <p class="projects-category-note">
+          <form class="projects-search-filter-form" method="get" action="/projects" aria-label="Search and filter campaigns">
             {% if selected_category %}
-            Showing approved {{ selected_category_label.lower() }} campaigns.
-            {% else %}
-            Showing all approved campaigns.
+            <input type="hidden" name="category" value="{{ selected_category }}" />
             {% endif %}
-          </p>
+            <label class="projects-search-input">
+              <span class="sr-only">Search campaigns</span>
+              <input
+                type="search"
+                name="q"
+                value="{{ search_query }}"
+                placeholder="Search campaigns by title, category, or purpose"
+              />
+            </label>
+            <label class="projects-sort-select">
+              <span class="sr-only">Sort campaigns</span>
+              <select name="sort">
+                {% for sort_filter in sort_filters %}
+                <option value="{{ sort_filter.value }}" {% if sort_filter.is_active %}selected{% endif %}>
+                  {{ sort_filter.label }}
+                </option>
+                {% endfor %}
+              </select>
+            </label>
+            <div class="projects-search-actions">
+              <button class="solid-button" type="submit">Apply</button>
+              <a class="ghost-button" href="/projects#published-projects">Clear</a>
+            </div>
+          </form>
+          <p class="projects-category-note">{{ results_summary }}</p>
         </section>
 
         {% if flash_message %}
@@ -161,15 +186,21 @@
                 <button
                   class="public-campaign-open"
                   type="button"
+                  data-project-id="{{ campaign.id }}"
                   data-project-title="{{ campaign.title }}"
                   data-project-category="{{ campaign.category_label }}"
                   data-project-owner="{{ campaign.owner_username }}"
+                  data-project-owner-email="{{ campaign.owner_email or '' }}"
                   data-project-goal="{% if campaign.goal_amount %}${{ '{:,}'.format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}"
-                  data-project-deadline="{% if campaign.deadline %}Deadline {{ campaign.deadline }}{% else %}No deadline published{% endif %}"
-                  data-project-published="{% if campaign.published_at %}Published {{ campaign.published_at }}{% else %}Ready for support{% endif %}"
+                  data-project-raised="${{ '{:,}'.format(campaign.amount_raised) }} raised"
+                  data-project-progress="{{ campaign.progress.progress_percentage }}%"
+                  data-project-funding-status="{{ campaign.progress.funding_status }}"
+                  data-project-deadline-status="{{ campaign.progress.deadline_status }}"
+                  data-project-published="{% if campaign.published_at %}{{ campaign.published_at }}{% else %}Ready for support{% endif %}"
                   data-project-description="{{ campaign.description or 'This approved campaign is ready to receive support.' }}"
                   data-project-image="{{ campaign.cover_image_url or '' }}"
                   data-project-images='{{ campaign.image_urls|tojson }}'
+                  data-project-is-favourite="{{ 'true' if campaign.is_favourite else 'false' }}"
                 >
                   <div class="public-campaign-image">
                     {% if campaign.cover_image_url %}
@@ -181,6 +212,29 @@
                   <div class="public-campaign-body">
                     <span class="campaign-category-badge">{{ campaign.category_label }}</span>
                     <strong>{{ campaign.title }}</strong>
+                    <div class="public-campaign-progress">
+                      <div class="progress-track compact" aria-hidden="true">
+                        <span
+                          class="progress-fill"
+                          style="width: {{ campaign.progress.progress_percentage }}%;"
+                        ></span>
+                      </div>
+                      <div class="public-campaign-progress-meta">
+                        <span>{{ campaign.progress.progress_percentage }}% funded</span>
+                        {% if campaign.progress.goal_amount %}
+                        <span>
+                          {% if campaign.progress.remaining_amount and campaign.progress.remaining_amount > 0 %}
+                          ${{ "{:,}".format(campaign.progress.remaining_amount) }} left to goal
+                          {% else %}
+                          Goal reached
+                          {% endif %}
+                        </span>
+                        {% else %}
+                        <span>Goal pending</span>
+                        {% endif %}
+                      </div>
+                      <p class="public-campaign-progress-status">{{ campaign.progress.deadline_status }}</p>
+                    </div>
                   </div>
                 </button>
               </article>
@@ -214,27 +268,58 @@
               ×
             </button>
             <div class="public-campaign-modal-layout">
-              <div class="public-campaign-modal-photo" id="public-campaign-modal-photo">
-                <button
-                  class="public-campaign-modal-arrow public-campaign-modal-arrow-prev"
-                  id="public-campaign-modal-prev"
-                  type="button"
-                  aria-label="View previous campaign image"
-                  hidden
-                >
-                  ‹
-                </button>
-                <img src="" alt="Campaign cover image" id="public-campaign-modal-image" hidden />
-                <div class="public-campaign-image-placeholder" id="public-campaign-modal-placeholder">Approved Campaign</div>
-                <button
-                  class="public-campaign-modal-arrow public-campaign-modal-arrow-next"
-                  id="public-campaign-modal-next"
-                  type="button"
-                  aria-label="View next campaign image"
-                  hidden
-                >
-                  ›
-                </button>
+              <div class="public-campaign-modal-side">
+                <div class="public-campaign-modal-photo" id="public-campaign-modal-photo">
+                  <button
+                    class="public-campaign-modal-arrow public-campaign-modal-arrow-prev"
+                    id="public-campaign-modal-prev"
+                    type="button"
+                    aria-label="View previous campaign image"
+                    hidden
+                  >
+                    ‹
+                  </button>
+                  <img src="" alt="Campaign cover image" id="public-campaign-modal-image" hidden />
+                  <div class="public-campaign-image-placeholder" id="public-campaign-modal-placeholder">Approved Campaign</div>
+                  <button
+                    class="public-campaign-modal-arrow public-campaign-modal-arrow-next"
+                    id="public-campaign-modal-next"
+                    type="button"
+                    aria-label="View next campaign image"
+                    hidden
+                  >
+                    ›
+                  </button>
+                </div>
+                <div class="public-campaign-modal-actions public-campaign-modal-actions-below-photo">
+                  {% if user_email %}
+                  <form id="public-campaign-support-form" method="post">
+                    <input type="hidden" name="category" value="{{ selected_category or '' }}" />
+                    <input type="hidden" name="q" value="{{ search_query }}" />
+                    <input type="hidden" name="sort" value="{{ selected_sort }}" />
+                    <input type="hidden" name="return_to" value="projects" />
+                    <label class="public-campaign-support-field">
+                      <span class="sr-only">Support amount</span>
+                      <input type="number" name="amount" min="1" step="1" placeholder="Enter support amount" required />
+                    </label>
+                    <button class="solid-button" id="public-campaign-support-button" type="submit">
+                      Support campaign
+                    </button>
+                  </form>
+                  <p class="account-message" id="public-campaign-support-message"></p>
+                  <form id="public-campaign-favourite-form" method="post">
+                    <input type="hidden" name="category" value="{{ selected_category or '' }}" />
+                    <input type="hidden" name="q" value="{{ search_query }}" />
+                    <input type="hidden" name="sort" value="{{ selected_sort }}" />
+                    <input type="hidden" name="return_to" value="projects" />
+                    <button class="solid-button" id="public-campaign-favourite-button" type="submit">
+                      Save to favourites
+                    </button>
+                  </form>
+                  {% else %}
+                  <a class="solid-button" href="/auth?mode=login">Log in to save campaigns</a>
+                  {% endif %}
+                </div>
               </div>
               <div class="public-campaign-modal-content">
                 <div class="public-campaign-modal-head">
@@ -251,8 +336,20 @@
                     <strong id="public-campaign-modal-goal"></strong>
                   </div>
                   <div class="public-campaign-modal-row">
-                    <span>Deadline</span>
-                    <strong id="public-campaign-modal-deadline"></strong>
+                    <span>Raised</span>
+                    <strong id="public-campaign-modal-raised"></strong>
+                  </div>
+                  <div class="public-campaign-modal-row">
+                    <span>Progress</span>
+                    <strong id="public-campaign-modal-progress"></strong>
+                  </div>
+                  <div class="public-campaign-modal-row">
+                    <span>Funding status</span>
+                    <strong id="public-campaign-modal-funding-status"></strong>
+                  </div>
+                  <div class="public-campaign-modal-row">
+                    <span>Deadline status</span>
+                    <strong id="public-campaign-modal-deadline-status"></strong>
                   </div>
                   <div class="public-campaign-modal-row">
                     <span>Published</span>
@@ -268,11 +365,46 @@
         </div>
         {% endif %}
 
+        <div
+          class="support-confirm-modal"
+          id="support-confirm-modal"
+          hidden
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="support-confirm-title"
+        >
+          <button
+            class="support-confirm-backdrop"
+            type="button"
+            aria-label="Close support confirmation"
+            data-close-support-confirm="true"
+          ></button>
+          <section class="support-confirm-panel">
+            <button
+              class="support-confirm-close"
+              type="button"
+              aria-label="Close support confirmation"
+              data-close-support-confirm="true"
+            >
+              ×
+            </button>
+            <div class="support-confirm-body">
+              <p class="eyebrow">Large Support Confirmation</p>
+              <h2 id="support-confirm-title">Confirm your support</h2>
+              <p class="support-confirm-copy">Charity is no rivalry, Love cannot be numbered.</p>
+              <div class="support-confirm-actions">
+                <button class="solid-button" type="button" id="support-confirm-approve">Confirm</button>
+                <button class="ghost-button" type="button" id="support-confirm-cancel">Cancel support</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
       </main>
     </div>
 
     <script
-      src="/static/site.js?v=20260412-projects-category-overflow-1"
+      src="/static/site.js?v=20260423-modal-published-time-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     ></script>
   </body>

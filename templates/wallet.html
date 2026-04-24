@@ -3,47 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Settings | FireflyFund</title>
+    <title>Wallet | FireflyFund</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script>
-      (function () {
-        const retryPrefix = "fireflyfund-asset-retry";
-        function reloadOnce() {
-          try {
-            const retryKey = `${retryPrefix}:${window.location.pathname}`;
-            if (sessionStorage.getItem(retryKey) === "1") return;
-            sessionStorage.setItem(retryKey, "1");
-          } catch (error) {}
-          const url = new URL(window.location.href);
-          url.searchParams.set("_asset_retry", Date.now().toString());
-          window.location.replace(url.toString());
-        }
-        window.__fireflyReloadOnce = reloadOnce;
-        window.addEventListener("load", function () {
-          window.setTimeout(function () {
-            try {
-              const bg = window.getComputedStyle(document.body).backgroundImage || "";
-              if (!bg || bg === "none") {
-                reloadOnce();
-                return;
-              }
-              sessionStorage.removeItem(`${retryPrefix}:${window.location.pathname}`);
-            } catch (error) {}
-          }, 250);
-        });
-      })();
-    </script>
-    <link
-      id="page-style"
-      rel="stylesheet"
-      href="/static/styles.css?v=20260423-active-nav-1"
-      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
-    />
+    <link rel="stylesheet" href="/static/styles.css?v=20260423-active-nav-1" />
   </head>
   <body>
     <div class="page-shell">
@@ -64,7 +31,6 @@
           {% if is_admin %}<a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}">Dashboard</a>{% endif %}
         </nav>
         <div class="header-actions">
-          {% if user_email %}
           <div class="user-menu">
             <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
               <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
@@ -88,77 +54,77 @@
               <a class="user-dropdown-link danger" href="/logout">Log Out</a>
             </div>
           </div>
-          {% else %}
-          <a class="ghost-button" href="/auth?mode=login">Login</a>
-          <a class="solid-button" href="/auth?mode=register">Sign Up</a>
-          {% endif %}
         </div>
       </header>
 
       <main class="account-page">
-        <section class="account-card">
+        <section class="account-card your-impact-page">
           <div class="account-card-head">
             <div>
-              <p class="eyebrow">Settings</p>
+              <p class="eyebrow">Wallet</p>
+              <h1>Wallet</h1>
+              <p>Manage the balance available to support fundraising campaigns.</p>
             </div>
+            <a class="ghost-button" href="/projects">Explore Projects</a>
           </div>
 
           {% if flash_message %}
           <p class="account-message {{ flash_message.kind }}">{{ flash_message.message }}</p>
           {% endif %}
 
-          <p class="account-message" id="settings-message"></p>
-
-          <form class="account-form" id="change-password-form">
-            <label class="account-field">
-              <span>Current Password</span>
-              <input type="password" name="current_password" required />
-            </label>
-
-            <label class="account-field">
-              <span>New Password</span>
-              <input type="password" name="new_password" required />
-              <small class="field-hint">Use at least 6 characters with both letters and numbers.</small>
-            </label>
-
-            <label class="account-field">
-              <span>Confirm New Password</span>
-              <input type="password" name="confirm_new_password" required />
-            </label>
-
-            <div class="account-actions">
-              <button class="solid-button" type="submit">Change Password</button>
-              <a class="ghost-button" href="/profile">Go to Profile</a>
-            </div>
-          </form>
-
-          <section class="danger-zone">
-            <div class="danger-zone-head">
-              <p class="eyebrow">Delete Account</p>
-              <h2>Delete your account</h2>
-            </div>
-
-            <p class="account-message" id="delete-account-message"></p>
-
-            <form class="account-form" id="delete-account-form">
-              <label class="account-field">
-                <span>Current Password</span>
-                <input type="password" name="current_password" required />
-              </label>
-
-              <div class="account-actions">
-                <button class="danger-button" type="submit">Delete Account</button>
+          <section class="impact-balance-card">
+            <div class="impact-balance-summary">
+              <div>
+                <p class="eyebrow">Available Balance</p>
+                <h2 class="impact-balance-amount" id="impact-balance-amount">${{ "{:,}".format(available_balance) }}</h2>
+                <p class="impact-total-copy">Balance available to support fundraising campaigns.</p>
               </div>
-            </form>
+              <button class="solid-button" type="button" id="impact-recharge-open">Recharge</button>
+            </div>
+            <p class="account-message" id="impact-balance-message"></p>
           </section>
-
         </section>
       </main>
     </div>
 
-    <script
-      src="/static/site.js?v=20260412-settings-clean-1"
-      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
-    ></script>
+    <div class="impact-recharge-modal" id="impact-recharge-modal" hidden role="dialog" aria-modal="true" aria-labelledby="impact-recharge-title">
+      <div class="impact-recharge-modal-backdrop" data-close-impact-recharge="true"></div>
+      <section class="impact-recharge-modal-panel">
+        <button class="impact-recharge-modal-close" type="button" aria-label="Close recharge dialog" data-close-impact-recharge="true">
+          ×
+        </button>
+        <div class="impact-recharge-modal-body">
+          <h2 id="impact-recharge-title">Recharge Balance</h2>
+          <div class="impact-recharge-step" id="impact-recharge-step-select">
+            <p>Select a top-up amount.</p>
+            <div class="impact-amount-options">
+              <button class="profile-switch-chip impact-amount-option" type="button" data-amount="10">$10</button>
+              <button class="profile-switch-chip impact-amount-option" type="button" data-amount="50">$50</button>
+              <button class="profile-switch-chip impact-amount-option" type="button" data-amount="100">$100</button>
+            </div>
+            <label class="account-field">
+              <span>Custom amount</span>
+              <input id="impact-custom-amount" type="number" min="1" step="1" placeholder="Enter custom amount" />
+            </label>
+            <button class="solid-button" type="button" id="impact-confirm-amount">Confirm Amount</button>
+          </div>
+
+          <div class="impact-recharge-step" id="impact-recharge-step-pay" hidden>
+            <p class="impact-recharge-selected">Selected amount: <strong id="impact-selected-amount">$0</strong></p>
+            <div class="impact-recharge-qr">
+              <img src="/assets/paynow" alt="PayNow QR code" />
+            </div>
+            <div class="impact-payment-result-actions" id="impact-payment-result-actions">
+              <button class="solid-button" type="button" id="impact-payment-success">Success</button>
+              <button class="ghost-button" type="button" id="impact-payment-failure">Failed</button>
+            </div>
+          </div>
+
+          <p class="account-message" id="impact-recharge-message"></p>
+        </div>
+      </section>
+    </div>
+
+    <script src="/static/site.js?v=20260423-wallet-move-balance-1"></script>
   </body>
 </html>

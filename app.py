@@ -70,6 +70,18 @@ def startup() -> None:
             )
             connection.execute(
                 text(
+                    "ALTER TABLE fundraising_campaigns "
+                    "ADD COLUMN IF NOT EXISTS amount_raised INTEGER DEFAULT 0"
+                )
+            )
+            connection.execute(
+                text(
+                    "ALTER TABLE fundraising_campaigns "
+                    "ADD COLUMN IF NOT EXISTS view_count INTEGER DEFAULT 0"
+                )
+            )
+            connection.execute(
+                text(
                     "UPDATE fundraising_campaigns "
                     "SET category = 'other' "
                     "WHERE category IS NULL OR TRIM(category) = ''"
@@ -81,6 +93,26 @@ def startup() -> None:
                     "SET workflow_stage = 0 "
                     "WHERE workflow_stage IS NULL"
                 )
+            )
+            connection.execute(
+                text(
+                    "UPDATE fundraising_campaigns "
+                    "SET amount_raised = 0 "
+                    "WHERE amount_raised IS NULL"
+                )
+            )
+            connection.execute(
+                text(
+                    "UPDATE fundraising_campaigns "
+                    "SET view_count = 0 "
+                    "WHERE view_count IS NULL"
+                )
+            )
+            connection.execute(
+                text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS available_balance INTEGER DEFAULT 0")
+            )
+            connection.execute(
+                text("UPDATE user_profiles SET available_balance = 0 WHERE available_balance IS NULL")
             )
         with get_session() as session:
             ensure_default_admin_account(session)
@@ -101,6 +133,18 @@ def startup() -> None:
         )
         connection.execute(
             text(
+                "ALTER TABLE fundraising_campaigns "
+                "ADD COLUMN IF NOT EXISTS amount_raised INTEGER DEFAULT 0"
+            )
+        )
+        connection.execute(
+            text(
+                "ALTER TABLE fundraising_campaigns "
+                "ADD COLUMN IF NOT EXISTS view_count INTEGER DEFAULT 0"
+            )
+        )
+        connection.execute(
+            text(
                 "UPDATE fundraising_campaigns "
                 "SET category = 'other' "
                 "WHERE category IS NULL OR TRIM(category) = ''"
@@ -114,6 +158,20 @@ def startup() -> None:
             )
         )
         connection.execute(
+            text(
+                "UPDATE fundraising_campaigns "
+                "SET amount_raised = 0 "
+                "WHERE amount_raised IS NULL"
+            )
+        )
+        connection.execute(
+            text(
+                "UPDATE fundraising_campaigns "
+                "SET view_count = 0 "
+                "WHERE view_count IS NULL"
+            )
+        )
+        connection.execute(
             text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS avatar_path TEXT")
         )
         connection.execute(
@@ -122,6 +180,12 @@ def startup() -> None:
         connection.execute(text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS age INTEGER"))
         connection.execute(
             text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS occupation VARCHAR(100)")
+        )
+        connection.execute(
+            text("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS available_balance INTEGER DEFAULT 0")
+        )
+        connection.execute(
+            text("UPDATE user_profiles SET available_balance = 0 WHERE available_balance IS NULL")
         )
         connection.execute(text("DELETE FROM authentication_tokens"))
         connection.execute(text("DELETE FROM user_sessions"))

@@ -5,7 +5,8 @@ from core.db import get_session
 from core.ui import templates
 from models.campaign import FundraisingCampaign
 from models.user import UserAccount
-from services.campaign_service import serialize_campaign_summary
+from services.campaign_service import build_projects_url, serialize_campaign_summary
+from services.donation_service import FavouriteController
 from services.user_service import (
     AuthController,
     ChangePasswordPayload,
@@ -24,6 +25,7 @@ from services.user_service import (
     get_authenticated_user,
     is_admin_email,
     pop_flash_message,
+    should_redirect_direct_visit_to_home,
 )
 
 
@@ -31,10 +33,10 @@ router = APIRouter()
 
 
 @router.get("/profile", response_class=HTMLResponse)
-def profile_page(
-    request: Request,
-    campaign_view: str = Query(default="fundraiser", pattern="^(fundraiser|donee)$"),
-) -> HTMLResponse:
+def profile_page(request: Request) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
     with get_session() as session:
         try:
             user = get_authenticated_user(request, session)
@@ -42,10 +44,6 @@ def profile_page(
             return RedirectResponse(url="/auth?mode=login", status_code=303)
 
         profile = ProfileController.GetProfile(session, user.id)
-        own_campaigns = FundraisingCampaign.GetCampaignsByOwner(session, user.id)
-        serialized_campaigns = [
-            serialize_campaign_summary(session, campaign) for campaign in own_campaigns
-        ]
         flash_message = pop_flash_message(request)
 
     return templates.TemplateResponse(
@@ -62,8 +60,6 @@ def profile_page(
             "occupation": profile["occupation"],
             "contact_details": profile["contact_details"],
             "avatar_url": profile["avatar_url"],
-            "campaign_view": campaign_view,
-            "campaigns": serialized_campaigns,
             "flash_message": flash_message,
         },
     )
@@ -71,6 +67,9 @@ def profile_page(
 
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
     with get_session() as session:
         try:
             user = get_authenticated_user(request, session)
@@ -100,6 +99,9 @@ def auth_page(
     request: Request,
     mode: str = Query(default="login", pattern="^(login|register|forgot|reset)$"),
 ) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
     from services.user_service import get_template_user_context
 
     user_context = get_template_user_context(request)

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Impact | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=20260423-active-nav-1" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/" class="{% if request.url.path == '/' %}is-active{% endif %}">Home</a>
+          <a href="/about" class="{% if request.url.path == '/about' %}is-active{% endif %}">About Us</a>
+          <a href="/transparency" class="{% if request.url.path == '/transparency' %}is-active{% endif %}">Transparency</a>
+          <a href="/projects" class="{% if request.url.path == '/projects' or request.url.path.startswith('/projects/') %}is-active{% endif %}">Projects</a>
+          {% if is_admin %}<a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}">Dashboard</a>{% endif %}
+        </nav>
+        <div class="header-actions">
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/your-fundraisers">Your Fundraisers</a>
+              <a class="user-dropdown-link" href="/your-impact">Your Impact</a>
+              <a class="user-dropdown-link" href="/wallet">Wallet</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-page">
+        <section class="account-card your-impact-page">
+          <div class="account-card-head">
+            <div>
+              <p class="eyebrow">Your Impact</p>
+              <h1>Your Impact</h1>
+            </div>
+            <a class="ghost-button" href="/projects">Explore Projects</a>
+          </div>
+
+          {% if flash_message %}
+          <p class="account-message {{ flash_message.kind }}">{{ flash_message.message }}</p>
+          {% endif %}
+
+          <section class="impact-card">
+            <h2 class="impact-total-amount">${{ "{:,}".format(impact_summary.total_amount) }}</h2>
+            <p class="impact-total-copy">Your total impact from donating, sharing and helping</p>
+            <div class="impact-grid">
+              <article>
+                <strong>{{ impact_summary.fundraisers_supported }}</strong>
+                <p>Fundraisers supported</p>
+              </article>
+              <article>
+                <strong>{{ impact_summary.people_inspired }}</strong>
+                <p>People you inspired to help</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="settings-campaign-section" id="impact-library">
+            <div class="projects-panel-head donation-history-head">
+              <div>
+                <p class="eyebrow">Donation History Page</p>
+                <h2>Donation history</h2>
+              </div>
+            </div>
+
+            <form class="fundraiser-filter-form donation-history-form" method="get" action="/your-impact#impact-library">
+              <label class="projects-sort-select">
+                <span>Category</span>
+                <select name="donation_category">
+                  {% for category_filter in donation_category_filters %}
+                  <option value="{{ category_filter.value }}" {% if category_filter.is_active %}selected{% endif %}>
+                    {{ category_filter.label }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="projects-sort-select">
+                <span>Date Period</span>
+                <select name="date_period">
+                  {% for date_filter in donation_date_filters %}
+                  <option value="{{ date_filter.value }}" {% if date_filter.is_active %}selected{% endif %}>
+                    {{ date_filter.label }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <div class="projects-search-actions">
+                <button class="solid-button" type="submit">Apply Filters</button>
+                <a class="ghost-button" href="/your-impact#impact-library">Clear Filters</a>
+              </div>
+            </form>
+
+            {% if donation_history %}
+            <div class="projects-campaign-list donee-donation-history-list">
+              {% for donation in donation_history %}
+              <article class="projects-campaign-card donation-history-card">
+                <div class="projects-campaign-card-head">
+                  <div class="public-campaign-heading">
+                    <span class="campaign-category-badge">{{ donation.category_label }}</span>
+                    <strong>{{ donation.campaign_title }}</strong>
+                  </div>
+                  <span class="campaign-status-badge status-published">{{ donation.amount_label }}</span>
+                </div>
+                <div class="projects-campaign-card-meta">
+                  <span>Fund raiser: {{ donation.fundraiser_name }}</span>
+                  <span>Donated {{ donation.donated_at }}</span>
+                  <span>{{ donation.progress.progress_percentage }}% funded</span>
+                </div>
+                <div class="profile-favourite-actions">
+                  <button
+                    class="ghost-button donation-history-open"
+                    type="button"
+                    data-donation-title="{{ donation.campaign_title }}"
+                    data-donation-category="{{ donation.category_label }}"
+                    data-donation-amount="{{ donation.amount_label }}"
+                    data-donation-date="{{ donation.donated_at }}"
+                    data-donation-fundraiser="{{ donation.fundraiser_name }}"
+                    data-donation-raised="${{ '{:,}'.format(donation.progress.amount_raised) }}"
+                    data-donation-goal="{% if donation.progress.goal_amount %}${{ '{:,}'.format(donation.progress.goal_amount) }}{% else %}Goal pending{% endif %}"
+                    data-donation-progress="{{ donation.progress.progress_percentage }}%"
+                    data-donation-funding-status="{{ donation.progress.funding_status }}"
+                    data-donation-deadline-status="{{ donation.progress.deadline_status }}"
+                    data-donation-detail-url="{{ donation.detail_url or '/projects' }}"
+                  >
+                    View details
+                  </button>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="projects-empty compact donee-placeholder-card">
+              <p>No donation records match the selected filters.</p>
+            </div>
+            {% endif %}
+
+            <div class="projects-panel-head">
+              <div>
+                <p class="eyebrow">Favourite Campaigns</p>
+                <h2>Saved campaigns</h2>
+              </div>
+            </div>
+            {% if favourite_campaigns %}
+            <div class="projects-campaign-list donee-favourite-list">
+              {% for campaign in favourite_campaigns %}
+              <article class="projects-campaign-card">
+                <div class="projects-campaign-card-head">
+                  <div class="public-campaign-heading">
+                    <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+                    <strong>{{ campaign.title }}</strong>
+                  </div>
+                  <span class="campaign-status-badge status-{{ campaign.status }}">{{ campaign.status_label }}</span>
+                </div>
+                <div class="projects-campaign-card-meta">
+                  <span>Fund raiser: {{ campaign.owner_username }}</span>
+                  <span>{% if campaign.goal_amount %}${{ "{:,}".format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}</span>
+                  <span>{{ campaign.deadline and ("Deadline " ~ campaign.deadline) or "No deadline published" }}</span>
+                </div>
+                <div class="profile-favourite-actions">
+                  <a class="ghost-button" href="{{ campaign.detail_url }}">View details</a>
+                  <form method="post" action="/projects/{{ campaign.id }}/favourites/remove">
+                    <input type="hidden" name="return_to" value="impact" />
+                    <button class="danger-button" type="submit">Remove</button>
+                  </form>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="projects-empty compact donee-placeholder-card">
+              <p>No favourite campaigns have been saved yet.</p>
+            </div>
+            {% endif %}
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="impact-donation-modal" id="impact-donation-modal" hidden role="dialog" aria-modal="true" aria-labelledby="impact-donation-title">
+      <button class="public-campaign-modal-backdrop" type="button" aria-label="Close donation detail dialog" data-close-impact-donation="true"></button>
+      <section class="public-campaign-modal-panel impact-donation-modal-panel">
+        <button class="public-campaign-modal-close" type="button" aria-label="Close donation detail dialog" data-close-impact-donation="true">
+          ×
+        </button>
+        <div class="public-campaign-modal-content">
+          <div class="public-campaign-modal-head">
+            <span class="campaign-category-badge" id="impact-donation-category"></span>
+            <h2 id="impact-donation-title"></h2>
+          </div>
+          <div class="public-campaign-modal-meta">
+            <div class="public-campaign-modal-row">
+              <span>Donation</span>
+              <strong id="impact-donation-amount"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Date</span>
+              <strong id="impact-donation-date"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Fund raiser</span>
+              <strong id="impact-donation-fundraiser"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Raised</span>
+              <strong id="impact-donation-raised"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Goal</span>
+              <strong id="impact-donation-goal"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Progress</span>
+              <strong id="impact-donation-progress"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Funding status</span>
+              <strong id="impact-donation-funding-status"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Deadline status</span>
+              <strong id="impact-donation-deadline-status"></strong>
+            </div>
+          </div>
+          <div class="public-campaign-modal-actions">
+            <a class="solid-button" id="impact-donation-detail-link" href="/projects">Open campaign</a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="/static/site.js?v=20260423-wallet-move-balance-1"></script>
+  </body>
+</html>

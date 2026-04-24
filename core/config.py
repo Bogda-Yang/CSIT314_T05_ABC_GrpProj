@@ -56,6 +56,45 @@ DASHBOARD_REVIEW_SORT_OPTIONS = (
 )
 DASHBOARD_REVIEW_SORT_LABELS = dict(DASHBOARD_REVIEW_SORT_OPTIONS)
 
+DEFAULT_DONEE_CAMPAIGN_SORT = "published_desc"
+DONEE_CAMPAIGN_SORT_OPTIONS = (
+    ("published_desc", "Latest published"),
+    ("published_asc", "Oldest published"),
+    ("goal_desc", "Goal: High to Low"),
+    ("goal_asc", "Goal: Low to High"),
+)
+DONEE_CAMPAIGN_SORT_LABELS = dict(DONEE_CAMPAIGN_SORT_OPTIONS)
+
+DEFAULT_FUNDRAISER_CAMPAIGN_SORT = "updated_desc"
+FUNDRAISER_CAMPAIGN_SORT_OPTIONS = (
+    ("updated_desc", "Updated: Desc"),
+    ("updated_asc", "Updated: Asc"),
+    ("views_desc", "Views: Desc"),
+    ("shortlists_desc", "Shortlists: Desc"),
+    ("raised_desc", "Raised: Desc"),
+)
+FUNDRAISER_CAMPAIGN_SORT_LABELS = dict(FUNDRAISER_CAMPAIGN_SORT_OPTIONS)
+
+FUNDRAISER_CAMPAIGN_LIFECYCLE_OPTIONS = (
+    ("all", "All"),
+    ("draft", "Draft"),
+    ("pending", "Pending Review"),
+    ("published", "Published"),
+    ("rejected", "Rejected"),
+    ("completed", "Completed"),
+)
+FUNDRAISER_CAMPAIGN_LIFECYCLE_LABELS = dict(FUNDRAISER_CAMPAIGN_LIFECYCLE_OPTIONS)
+
+DEFAULT_DONATION_DATE_PERIOD = "all"
+DONATION_DATE_PERIOD_OPTIONS = (
+    ("all", "All time"),
+    ("7d", "Last 7 days"),
+    ("30d", "Last 30 days"),
+    ("90d", "Last 90 days"),
+    ("year", "This year"),
+)
+DONATION_DATE_PERIOD_LABELS = dict(DONATION_DATE_PERIOD_OPTIONS)
+
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 if not DATABASE_URL:
     raise RuntimeError(

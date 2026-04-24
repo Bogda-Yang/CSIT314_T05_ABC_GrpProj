@@ -41,7 +41,7 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260414-mobile-user-menu-fix-1"
+      href="/static/styles.css?v=20260423-active-nav-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
@@ -57,11 +57,11 @@
           </span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
-          <a href="/">Home</a>
-          <a href="/about">About Us</a>
-          <a href="/transparency">Transparency</a>
-          <a href="/projects">Projects</a>
-          {% if is_admin %}<a href="/dashboard">Dashboard</a>{% endif %}
+          <a href="/" class="{% if request.url.path == '/' %}is-active{% endif %}">Home</a>
+          <a href="/about" class="{% if request.url.path == '/about' %}is-active{% endif %}">About Us</a>
+          <a href="/transparency" class="{% if request.url.path == '/transparency' %}is-active{% endif %}">Transparency</a>
+          <a href="/projects" class="{% if request.url.path == '/projects' or request.url.path.startswith('/projects/') %}is-active{% endif %}">Projects</a>
+          {% if is_admin %}<a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}">Dashboard</a>{% endif %}
         </nav>
         <div class="header-actions">
           {% if user_email %}
@@ -81,6 +81,9 @@
             <div class="user-dropdown" hidden>
               <div class="user-dropdown-name">{{ username or "User" }}</div>
               <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/your-fundraisers">Your Fundraisers</a>
+              <a class="user-dropdown-link" href="/your-impact">Your Impact</a>
+              <a class="user-dropdown-link" href="/wallet">Wallet</a>
               <a class="user-dropdown-link" href="/settings">Settings</a>
               <a class="user-dropdown-link danger" href="/logout">Log Out</a>
             </div>

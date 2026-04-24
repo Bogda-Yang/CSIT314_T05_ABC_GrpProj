@@ -4,6 +4,7 @@ import random
 import smtplib
 from datetime import timedelta
 from email.message import EmailMessage
+from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -34,6 +35,7 @@ from models.user import (
     UserSession,
     VerificationCode,
 )
+from models.donation import DonationRecord, FavouriteCampaign
 
 
 def request_validation_exception_handler(
@@ -181,6 +183,26 @@ def redirect_with_settings_flash(
     return RedirectResponse(url=build_settings_url(anchor=anchor), status_code=303)
 
 
+def should_redirect_direct_visit_to_home(request: Request) -> bool:
+    if request.url.path == "/":
+        return False
+
+    sec_fetch_site = (request.headers.get("sec-fetch-site") or "").strip().lower()
+    referer = (request.headers.get("referer") or "").strip()
+
+    if sec_fetch_site == "same-origin":
+        return False
+
+    if not referer:
+        return True
+
+    referer_url = urlparse(referer)
+    request_host = (request.headers.get("host") or request.url.netloc).strip().lower()
+    referer_host = referer_url.netloc.strip().lower()
+
+    return not referer_host or referer_host != request_host
+
+
 def send_email_code(receiver: str, code: str, purpose: str) -> None:
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
@@ -276,6 +298,7 @@ def ensure_default_admin_account(session: Session) -> None:
                 gender=None,
                 age=None,
                 occupation="Administrator",
+                available_balance=0,
                 created_at=now_dt(),
                 updated_at=now_dt(),
             )
@@ -489,6 +512,7 @@ class AuthController:
         profile = UserProfile(
             user_id=user.id,
             contact_details="",
+            available_balance=0,
             created_at=now_dt(),
             updated_at=now_dt(),
         )
@@ -585,6 +609,7 @@ class ProfileController:
                 gender=None,
                 age=None,
                 occupation=None,
+                available_balance=0,
                 created_at=now_dt(),
                 updated_at=now_dt(),
             )
@@ -599,6 +624,7 @@ class ProfileController:
             "occupation": profile.occupation or "",
             "contact_details": profile.contact_details,
             "avatar_url": build_avatar_url(profile.avatar_path),
+            "available_balance": profile.available_balance or 0,
         }
 
     @staticmethod
@@ -883,6 +909,8 @@ class DeleteAccountController:
     def DeleteAccount(session: Session, user_account: UserAccount) -> None:
         DeleteAccountController.ClearUserProfile(session, user_account.id)
         DeleteAccountController.ClearPasswordHistory(session, user_account.id)
+        DeleteAccountController.ClearUserDonations(session, user_account.id)
+        DeleteAccountController.ClearUserFavourites(session, user_account.id)
         DeleteAccountController.ClearUserSessions(session, user_account.id)
         DeleteAccountController.ClearVerificationRecords(session, user_account.email)
         session.flush()
@@ -906,6 +934,14 @@ class DeleteAccountController:
         )
         for record in password_history_records:
             session.delete(record)
+
+    @staticmethod
+    def ClearUserFavourites(session: Session, user_id: int) -> None:
+        FavouriteCampaign.DeleteUserFavouriteRecords(session, user_id)
+
+    @staticmethod
+    def ClearUserDonations(session: Session, user_id: int) -> None:
+        DonationRecord.DeleteUserDonationRecords(session, user_id)
 
     @staticmethod
     def ClearUserSessions(session: Session, user_id: int) -> None:

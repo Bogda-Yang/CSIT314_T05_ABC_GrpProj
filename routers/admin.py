@@ -20,6 +20,7 @@ from services.campaign_service import (
     serialize_campaign_summary,
 )
 from services.user_service import get_authenticated_user, pop_flash_message
+from services.user_service import should_redirect_direct_visit_to_home
 
 
 router = APIRouter()
@@ -33,6 +34,9 @@ def dashboard_page(
     review_campaign_id: int | None = Query(default=None, ge=1),
     modal: str | None = Query(default=None),
 ) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
     with get_session() as session:
         try:
             user = get_authenticated_user(request, session)

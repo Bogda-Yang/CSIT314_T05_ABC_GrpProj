@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from core.db import get_session
@@ -8,13 +8,23 @@ from models.user import UserProfile
 from services.campaign_service import (
     CAMPAIGN_CATEGORY_OPTIONS,
     CampaignApprovalController,
+    CampaignAnalyticsController,
     CampaignController,
     CampaignDeadlineController,
     CampaignDescriptionController,
+    CampaignFilterController,
     CampaignGoalController,
+    CampaignHistoryController,
     CampaignImageController,
     build_campaign_management_url,
+    build_your_fundraisers_url,
     ensure_campaign_owner,
+    get_fundraiser_category_filters,
+    get_fundraiser_lifecycle_filters,
+    get_fundraiser_sort_filters,
+    normalize_campaign_category,
+    normalize_fundraiser_campaign_sort,
+    normalize_fundraiser_lifecycle,
     redirect_with_campaign_create_flash,
     redirect_with_campaign_management_flash,
     serialize_campaign_detail,
@@ -25,6 +35,7 @@ from services.user_service import (
     is_admin_email,
     pop_flash_message,
     redirect_with_flash,
+    should_redirect_direct_visit_to_home,
 )
 from core.storage import build_avatar_url
 
@@ -34,6 +45,9 @@ router = APIRouter()
 
 @router.get("/projects/create-campaign", response_class=HTMLResponse)
 def campaign_create_page(request: Request) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
     with get_session() as session:
         try:
             user = get_authenticated_user(request, session)
@@ -64,11 +78,105 @@ def campaign_create_page(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/your-fundraisers", response_class=HTMLResponse)
+def your_fundraisers_page(
+    request: Request,
+    category: str | None = Query(default=None),
+    lifecycle: str = Query(default="all"),
+    sort: str = Query(default="updated_desc"),
+) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
+    requested_category = (category or "").strip().lower()
+    selected_category = None
+    if requested_category and requested_category != "all":
+        selected_category = normalize_campaign_category(requested_category)
+    selected_lifecycle = normalize_fundraiser_lifecycle(lifecycle)
+    selected_sort = normalize_fundraiser_campaign_sort(sort)
+
+    with get_session() as session:
+        try:
+            user = get_authenticated_user(request, session)
+        except HTTPException:
+            return RedirectResponse(url="/auth?mode=login", status_code=303)
+
+        profile = UserProfile.GetProfileDetails(session, user.id)
+        filtered_campaigns = CampaignFilterController.RetrieveFilteredCampaignResults(
+            session,
+            user.id,
+            category=selected_category,
+            lifecycle=selected_lifecycle,
+            sort_order=selected_sort,
+        )
+        completed_campaigns = CampaignHistoryController.RetrieveCompletedCampaignList(
+            session,
+            user.id,
+            category=selected_category,
+            sort_order=selected_sort,
+        )
+        serialized_campaigns = [
+            serialize_campaign_detail(session, own_campaign) for own_campaign in filtered_campaigns
+        ]
+        serialized_completed_campaigns = [
+            serialize_campaign_detail(session, campaign) for campaign in completed_campaigns
+        ]
+        completed_count = len(serialized_completed_campaigns)
+        if selected_lifecycle == "completed":
+            serialized_completed_campaigns = []
+        total_views = sum(
+            CampaignAnalyticsController.GetViewCount(session, campaign.id)
+            for campaign in filtered_campaigns
+        )
+        total_shortlists = sum(
+            CampaignAnalyticsController.GetShortlistCount(session, campaign.id)
+            for campaign in filtered_campaigns
+        )
+        flash_message = pop_flash_message(request)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="your_fundraisers.html",
+        context={
+            "request": request,
+            "title": "Your Fundraisers",
+            "username": user.username,
+            "user_email": user.email,
+            "avatar_url": build_avatar_url(profile.avatar_path) if profile else None,
+            "is_admin": is_admin_email(user.email),
+            "flash_message": flash_message,
+            "selected_category": selected_category,
+            "selected_lifecycle": selected_lifecycle,
+            "selected_sort": selected_sort,
+            "category_filters": get_fundraiser_category_filters(selected_category),
+            "lifecycle_filters": get_fundraiser_lifecycle_filters(selected_lifecycle),
+            "sort_filters": get_fundraiser_sort_filters(selected_sort),
+            "analytics_summary": {
+                "campaign_count": len(serialized_campaigns),
+                "total_views": total_views,
+                "total_shortlists": total_shortlists,
+                "completed_count": completed_count,
+            },
+            "campaigns": serialized_campaigns,
+            "completed_campaigns": serialized_completed_campaigns,
+            "your_fundraisers_url": build_your_fundraisers_url(
+                selected_category=selected_category,
+                selected_lifecycle=selected_lifecycle,
+                selected_sort=selected_sort,
+                anchor="fundraiser-library",
+            ),
+        },
+    )
+
+
 @router.get("/projects/manage/{campaign_id}", response_class=HTMLResponse)
 def campaign_management_page(
     request: Request,
     campaign_id: int,
 ) -> HTMLResponse:
+    if should_redirect_direct_visit_to_home(request):
+        return RedirectResponse(url="/", status_code=303)
+
     with get_session() as session:
         try:
             user = get_authenticated_user(request, session)
@@ -373,7 +481,7 @@ def delete_campaign(
 
     return redirect_with_flash(
         request,
-        "/profile?campaign_view=fundraiser#my-campaigns",
+        "/your-fundraisers#my-fundraisers",
         "Campaign deleted successfully.",
         "success",
     )

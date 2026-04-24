@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime
 
@@ -13,21 +14,34 @@ from core.config import (
     DASHBOARD_REVIEW_SORT_LABELS,
     DASHBOARD_REVIEW_SORT_OPTIONS,
     DEFAULT_CAMPAIGN_CATEGORY,
+    DEFAULT_DONEE_CAMPAIGN_SORT,
     DEFAULT_DASHBOARD_REVIEW_SORT,
+    DEFAULT_FUNDRAISER_CAMPAIGN_SORT,
+    DONEE_CAMPAIGN_SORT_LABELS,
+    DONEE_CAMPAIGN_SORT_OPTIONS,
+    FUNDRAISER_CAMPAIGN_LIFECYCLE_LABELS,
+    FUNDRAISER_CAMPAIGN_LIFECYCLE_OPTIONS,
+    FUNDRAISER_CAMPAIGN_SORT_LABELS,
+    FUNDRAISER_CAMPAIGN_SORT_OPTIONS,
     PROJECTS_PRIMARY_CATEGORY_FILTER_VALUES,
     SUPABASE_CAMPAIGN_BUCKET,
 )
 from core.security import now_dt
 from core.storage import build_campaign_image_url, store_uploaded_asset
 from models.campaign import (
+    CampaignAnalytics,
     CampaignDeadline,
     CampaignDescription,
     CampaignGoal,
     CampaignImage,
+    CampaignProgress,
+    CampaignViewRecord,
     CampaignStatus,
+    CompletedCampaignRecord,
     FundraisingCampaign,
     RejectionRecord,
 )
+from models.donation import DonationRecord, FavouriteCampaign
 from models.user import UserAccount
 from services.user_service import is_admin_email, set_flash_message
 
@@ -36,6 +50,8 @@ def build_projects_url(
     campaign_id: int | None = None,
     review_campaign_id: int | None = None,
     selected_category: str | None = None,
+    search_query: str | None = None,
+    selected_sort: str | None = None,
     anchor: str | None = None,
 ) -> str:
     from urllib.parse import urlencode
@@ -43,6 +59,10 @@ def build_projects_url(
     query_pairs: list[tuple[str, str]] = []
     if selected_category:
         query_pairs.append(("category", selected_category))
+    if search_query:
+        query_pairs.append(("q", search_query))
+    if selected_sort:
+        query_pairs.append(("sort", selected_sort))
     if campaign_id is not None:
         query_pairs.append(("campaign_id", str(campaign_id)))
     if review_campaign_id is not None:
@@ -97,6 +117,33 @@ def build_campaign_management_url(campaign_id: int, anchor: str | None = None) -
     return url
 
 
+def build_your_fundraisers_url(
+    selected_category: str | None = None,
+    selected_lifecycle: str | None = None,
+    selected_sort: str | None = None,
+    detail_campaign_id: int | None = None,
+    anchor: str | None = None,
+) -> str:
+    from urllib.parse import urlencode
+
+    query_pairs: list[tuple[str, str]] = []
+    if selected_category:
+        query_pairs.append(("category", selected_category))
+    if selected_lifecycle:
+        query_pairs.append(("lifecycle", selected_lifecycle))
+    if selected_sort:
+        query_pairs.append(("sort", selected_sort))
+    if detail_campaign_id is not None:
+        query_pairs.append(("detail_campaign_id", str(detail_campaign_id)))
+
+    url = "/your-fundraisers"
+    if query_pairs:
+        url = f"{url}?{urlencode(query_pairs)}"
+    if anchor:
+        url = f"{url}#{anchor}"
+    return url
+
+
 def redirect_with_projects_flash(
     request: Request,
     message: str,
@@ -104,6 +151,8 @@ def redirect_with_projects_flash(
     campaign_id: int | None = None,
     review_campaign_id: int | None = None,
     selected_category: str | None = None,
+    search_query: str | None = None,
+    selected_sort: str | None = None,
     anchor: str | None = None,
 ) -> RedirectResponse:
     set_flash_message(request, message, kind)
@@ -112,6 +161,8 @@ def redirect_with_projects_flash(
             campaign_id=campaign_id,
             review_campaign_id=review_campaign_id,
             selected_category=selected_category,
+            search_query=search_query,
+            selected_sort=selected_sort,
             anchor=anchor,
         ),
         status_code=303,
@@ -193,6 +244,13 @@ def normalize_dashboard_review_sort(sort_order: str | None) -> str:
     return clean_sort_order
 
 
+def normalize_donee_campaign_sort(sort_order: str | None) -> str:
+    clean_sort_order = (sort_order or "").strip().lower()
+    if clean_sort_order not in DONEE_CAMPAIGN_SORT_LABELS:
+        return DEFAULT_DONEE_CAMPAIGN_SORT
+    return clean_sort_order
+
+
 def humanize_campaign_workflow_stage(stage: int) -> str:
     return {
         0: "Draft created",
@@ -202,6 +260,13 @@ def humanize_campaign_workflow_stage(stage: int) -> str:
         4: "Images uploaded",
         5: "Deadline saved",
     }.get(stage, "Ready for submission")
+
+
+def clean_campaign_title_for_display(title: str | None) -> str:
+    clean_title = (title or "").strip()
+    if not clean_title:
+        return "Untitled Campaign"
+    return re.sub(r"\s*-\s*category:\s*.+$", "", clean_title, flags=re.IGNORECASE).strip()
 
 
 def ensure_campaign_owner(
@@ -223,6 +288,8 @@ def serialize_campaign_summary(
 ) -> dict[str, object]:
     owner_account = UserAccount.GetUserAccount(session, campaign.owner_id)
     image_records = CampaignImage.GetImageDetails(session, campaign.id)
+    progress_data = CampaignProgress.GetFundingStatusDetails(session, campaign.id)
+    shortlist_count = CampaignAnalytics.GetShortlistCount(session, campaign.id)
     image_urls = [
         build_campaign_image_url(record.image_path)
         for record in image_records
@@ -233,7 +300,7 @@ def serialize_campaign_summary(
         "id": campaign.id,
         "owner_username": owner_account.username if owner_account else "Unknown",
         "owner_email": owner_account.email if owner_account else None,
-        "title": campaign.title,
+        "title": clean_campaign_title_for_display(campaign.title),
         "category": campaign.category or DEFAULT_CAMPAIGN_CATEGORY,
         "category_label": humanize_campaign_category(campaign.category),
         "description": campaign.description.strip() if campaign.description else None,
@@ -243,10 +310,14 @@ def serialize_campaign_summary(
             else campaign.description.strip()
         ),
         "goal_amount": campaign.goal_amount,
+        "amount_raised": int(campaign.amount_raised or 0),
+        "view_count": int(campaign.view_count or 0),
+        "shortlist_count": shortlist_count,
         "workflow_stage": campaign.workflow_stage or 0,
         "workflow_stage_label": humanize_campaign_workflow_stage(campaign.workflow_stage or 0),
         "status": campaign.status,
         "status_label": humanize_campaign_status(campaign.status),
+        "is_completed": FundraisingCampaign.IsCompleted(campaign),
         "deadline": campaign.deadline,
         "updated_at": campaign.updated_at.strftime("%Y-%m-%d %H:%M"),
         "published_at": campaign.published_at.strftime("%Y-%m-%d %H:%M")
@@ -255,6 +326,7 @@ def serialize_campaign_summary(
         "image_count": len(image_records),
         "cover_image_url": first_image_url,
         "image_urls": image_urls,
+        "progress": progress_data,
     }
 
 
@@ -264,27 +336,38 @@ def serialize_campaign_detail(
     owner_account = UserAccount.GetUserAccount(session, campaign.owner_id)
     image_records = CampaignImage.GetImageDetails(session, campaign.id)
     status_details = CampaignStatus.GetStatusDetails(session, campaign)
+    exposure_details = CampaignAnalytics.GetExposureDetails(session, campaign.id)
+    interest_details = CampaignAnalytics.GetInterestDetails(session, campaign.id)
+    progress_data = CampaignProgress.GetFundingStatusDetails(session, campaign.id)
     return {
         "id": campaign.id,
         "owner_id": campaign.owner_id,
         "owner_username": owner_account.username if owner_account else "Unknown",
         "owner_email": owner_account.email if owner_account else None,
-        "title": campaign.title,
+        "title": clean_campaign_title_for_display(campaign.title),
         "category": campaign.category or DEFAULT_CAMPAIGN_CATEGORY,
         "category_label": humanize_campaign_category(campaign.category),
         "goal_amount": campaign.goal_amount,
+        "amount_raised": int(campaign.amount_raised or 0),
         "description": campaign.description,
         "deadline": campaign.deadline,
         "workflow_stage": campaign.workflow_stage or 0,
         "workflow_stage_label": humanize_campaign_workflow_stage(campaign.workflow_stage or 0),
         "status": campaign.status,
         "status_label": humanize_campaign_status(campaign.status),
+        "is_completed": FundraisingCampaign.IsCompleted(campaign),
         "created_at": campaign.created_at.strftime("%Y-%m-%d %H:%M"),
         "updated_at": campaign.updated_at.strftime("%Y-%m-%d %H:%M"),
         "submitted_at": status_details["submitted_at"],
         "published_at": status_details["published_at"],
         "reviewed_at": status_details["reviewed_at"],
         "rejection_reason": status_details["rejection_reason"],
+        "view_count": int(campaign.view_count or 0),
+        "shortlist_count": int(interest_details["shortlist_count"]),
+        "latest_viewed_at": exposure_details["latest_viewed_at"],
+        "latest_shortlisted_at": interest_details["latest_shortlisted_at"],
+        "recent_view_timestamps": exposure_details["recent_view_timestamps"],
+        "progress": progress_data,
         "image_count": len(image_records),
         "images": [
             {
@@ -369,6 +452,9 @@ class CampaignController:
     def DeleteCampaign(session: Session, campaign: FundraisingCampaign) -> None:
         CampaignImage.DeleteImageRecords(session, campaign.id)
         RejectionRecord.DeleteCampaignRejectionRecords(session, campaign.id)
+        FavouriteCampaign.DeleteCampaignFavouriteRecords(session, campaign.id)
+        DonationRecord.DeleteCampaignDonationRecords(session, campaign.id)
+        CampaignViewRecord.DeleteCampaignViewRecords(session, campaign.id)
         session.flush()
         CampaignController.RemoveCampaign(session, campaign)
         session.commit()
@@ -748,3 +834,188 @@ class CampaignRejectionController:
     @staticmethod
     def RecordRejectionReason(session: Session, campaign_id: int, reason: str) -> None:
         RejectionRecord.SaveRejectionReason(session, campaign_id, reason)
+
+
+class CampaignAnalyticsController:
+    @staticmethod
+    def RetrieveViewStatistics(
+        session: Session,
+        owner_id: int,
+        category: str | None = None,
+        lifecycle: str | None = None,
+        sort_order: str = DEFAULT_FUNDRAISER_CAMPAIGN_SORT,
+    ) -> list[FundraisingCampaign]:
+        return CampaignAnalytics.GetViewStatistics(
+            session,
+            owner_id,
+            category=category,
+            lifecycle=lifecycle,
+            sort_order=sort_order,
+        )
+
+    @staticmethod
+    def GetViewCount(session: Session, campaign_id: int) -> int:
+        return CampaignAnalytics.GetViewCount(session, campaign_id)
+
+    @staticmethod
+    def GetDetailedExposureData(session: Session, campaign_id: int) -> dict[str, object]:
+        return CampaignAnalytics.GetExposureDetails(session, campaign_id)
+
+    @staticmethod
+    def RetrieveShortlistStatistics(
+        session: Session,
+        owner_id: int,
+        category: str | None = None,
+        lifecycle: str | None = None,
+        sort_order: str = DEFAULT_FUNDRAISER_CAMPAIGN_SORT,
+    ) -> list[FundraisingCampaign]:
+        return CampaignAnalytics.GetShortlistStatistics(
+            session,
+            owner_id,
+            category=category,
+            lifecycle=lifecycle,
+            sort_order=sort_order,
+        )
+
+    @staticmethod
+    def GetShortlistCount(session: Session, campaign_id: int) -> int:
+        return CampaignAnalytics.GetShortlistCount(session, campaign_id)
+
+    @staticmethod
+    def GetDetailedInterestData(session: Session, campaign_id: int) -> dict[str, object]:
+        return CampaignAnalytics.GetInterestDetails(session, campaign_id)
+
+    @staticmethod
+    def RegisterCampaignView(
+        session: Session, campaign_id: int, viewer_user_id: int | None = None
+    ) -> dict[str, object]:
+        campaign = FundraisingCampaign.GetCampaignById(session, campaign_id)
+        if not campaign or campaign.status != "published":
+            raise HTTPException(status_code=404, detail="Campaign not found.")
+        CampaignViewRecord.RecordCampaignView(session, campaign_id, viewer_user_id)
+        FundraisingCampaign.RegisterCampaignView(campaign)
+        session.add(campaign)
+        session.commit()
+        return {
+            "view_count": CampaignAnalytics.GetViewCount(session, campaign_id),
+            "exposure_details": CampaignAnalytics.GetExposureDetails(session, campaign_id),
+        }
+
+
+class CampaignHistoryController:
+    @staticmethod
+    def RetrieveCompletedCampaignList(
+        session: Session,
+        owner_id: int,
+        category: str | None = None,
+        sort_order: str = DEFAULT_FUNDRAISER_CAMPAIGN_SORT,
+    ) -> list[FundraisingCampaign]:
+        return CompletedCampaignRecord.GetCompletedCampaigns(
+            session,
+            owner_id,
+            category=category,
+            sort_order=sort_order,
+        )
+
+    @staticmethod
+    def GetCompletedCampaignDetails(
+        session: Session, owner_id: int, campaign_id: int
+    ) -> dict[str, object]:
+        campaign = CompletedCampaignRecord.GetCampaignById(session, owner_id, campaign_id)
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Completed campaign not found.")
+        return serialize_campaign_detail(session, campaign)
+
+    @staticmethod
+    def GetCampaignPerformance(
+        session: Session, owner_id: int, campaign_id: int
+    ) -> dict[str, object]:
+        performance_data = CompletedCampaignRecord.GetPerformanceData(
+            session, owner_id, campaign_id
+        )
+        if not performance_data:
+            raise HTTPException(status_code=404, detail="Campaign performance not found.")
+        return performance_data
+
+
+class CampaignFilterController:
+    @staticmethod
+    def FilterCampaigns(
+        session: Session,
+        owner_id: int,
+        category: str | None = None,
+        lifecycle: str | None = None,
+        sort_order: str = DEFAULT_FUNDRAISER_CAMPAIGN_SORT,
+    ) -> list[FundraisingCampaign]:
+        return FundraisingCampaign.FilterCampaigns(
+            session,
+            owner_id=owner_id,
+            category=category,
+            lifecycle=lifecycle,
+            sort_order=sort_order,
+        )
+
+    @staticmethod
+    def RetrieveFilteredCampaignResults(
+        session: Session,
+        owner_id: int,
+        category: str | None = None,
+        lifecycle: str | None = None,
+        sort_order: str = DEFAULT_FUNDRAISER_CAMPAIGN_SORT,
+    ) -> list[FundraisingCampaign]:
+        return FundraisingCampaign.GetFilteredCampaigns(
+            session,
+            owner_id=owner_id,
+            category=category,
+            lifecycle=lifecycle,
+            sort_order=sort_order,
+        )
+
+
+def get_fundraiser_lifecycle_filters(selected_lifecycle: str) -> list[dict[str, object]]:
+    return [
+        {
+            "value": option_value,
+            "label": option_label,
+            "is_active": option_value == selected_lifecycle,
+        }
+        for option_value, option_label in FUNDRAISER_CAMPAIGN_LIFECYCLE_OPTIONS
+    ]
+
+
+def get_fundraiser_sort_filters(selected_sort: str) -> list[dict[str, object]]:
+    return [
+        {
+            "value": option_value,
+            "label": option_label,
+            "is_active": option_value == selected_sort,
+        }
+        for option_value, option_label in FUNDRAISER_CAMPAIGN_SORT_OPTIONS
+    ]
+
+
+def get_fundraiser_category_filters(selected_category: str | None) -> list[dict[str, object]]:
+    return [
+        {
+            "value": option_value,
+            "label": option_label,
+            "is_active": (
+                selected_category is None if option_value == "all" else selected_category == option_value
+            ),
+        }
+        for option_value, option_label in CAMPAIGN_PUBLIC_FILTER_OPTIONS
+    ]
+
+
+def normalize_fundraiser_campaign_sort(sort_order: str | None) -> str:
+    clean_sort_order = (sort_order or "").strip().lower()
+    if clean_sort_order not in FUNDRAISER_CAMPAIGN_SORT_LABELS:
+        return DEFAULT_FUNDRAISER_CAMPAIGN_SORT
+    return clean_sort_order
+
+
+def normalize_fundraiser_lifecycle(lifecycle: str | None) -> str:
+    clean_lifecycle = (lifecycle or "all").strip().lower()
+    if clean_lifecycle not in FUNDRAISER_CAMPAIGN_LIFECYCLE_LABELS:
+        return "all"
+    return clean_lifecycle

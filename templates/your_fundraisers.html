@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Fundraisers | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=20260423-active-nav-1" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/" class="{% if request.url.path == '/' %}is-active{% endif %}">Home</a>
+          <a href="/about" class="{% if request.url.path == '/about' %}is-active{% endif %}">About Us</a>
+          <a href="/transparency" class="{% if request.url.path == '/transparency' %}is-active{% endif %}">Transparency</a>
+          <a href="/projects" class="{% if request.url.path == '/projects' or request.url.path.startswith('/projects/') %}is-active{% endif %}">Projects</a>
+          {% if is_admin %}<a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}">Dashboard</a>{% endif %}
+        </nav>
+        <div class="header-actions">
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/your-fundraisers">Your Fundraisers</a>
+              <a class="user-dropdown-link" href="/your-impact">Your Impact</a>
+              <a class="user-dropdown-link" href="/wallet">Wallet</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-page">
+        <section class="account-card fundraiser-analytics-page">
+          <div class="account-card-head">
+            <div>
+              <p class="eyebrow">Campaign Analytics</p>
+              <h1>Your Fundraisers</h1>
+              <p>Track campaign views, shortlist interest, completed campaigns, and performance.</p>
+            </div>
+            <a class="solid-button" href="/projects/create-campaign">Create Campaign</a>
+          </div>
+
+          {% if flash_message %}
+          <p class="account-message {{ flash_message.kind }}">{{ flash_message.message }}</p>
+          {% endif %}
+
+          <section class="fundraiser-summary-grid">
+            <article class="impact-card fundraiser-summary-card">
+              <p class="eyebrow">Campaigns</p>
+              <strong>{{ analytics_summary.campaign_count }}</strong>
+              <p>Campaigns available for analysis</p>
+            </article>
+            <article class="impact-card fundraiser-summary-card">
+              <p class="eyebrow">Views</p>
+              <strong>{{ analytics_summary.total_views }}</strong>
+              <p>Total campaign views</p>
+            </article>
+            <article class="impact-card fundraiser-summary-card">
+              <p class="eyebrow">Shortlists</p>
+              <strong>{{ analytics_summary.total_shortlists }}</strong>
+              <p>Total times shortlisted</p>
+            </article>
+            <article class="impact-card fundraiser-summary-card">
+              <p class="eyebrow">Completed</p>
+              <strong>{{ analytics_summary.completed_count }}</strong>
+              <p>Completed campaigns ready for review</p>
+            </article>
+          </section>
+
+          <section class="settings-campaign-section" id="fundraiser-library">
+            <div class="projects-panel-head">
+              <div>
+                <p class="eyebrow">Campaign Analytics Page</p>
+                <h2>Campaigns under analysis</h2>
+              </div>
+            </div>
+
+            <form class="fundraiser-filter-form" method="get" action="/your-fundraisers#fundraiser-library">
+              <label class="projects-sort-select">
+                <span>Category</span>
+                <select name="category">
+                  {% for category_filter in category_filters %}
+                  <option value="{{ category_filter.value }}" {% if category_filter.is_active %}selected{% endif %}>
+                    {{ category_filter.label }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="projects-sort-select">
+                <span>Lifecycle</span>
+                <select name="lifecycle">
+                  {% for lifecycle_filter in lifecycle_filters %}
+                  <option value="{{ lifecycle_filter.value }}" {% if lifecycle_filter.is_active %}selected{% endif %}>
+                    {{ lifecycle_filter.label }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="projects-sort-select">
+                <span>Sort By</span>
+                <select name="sort">
+                  {% for sort_filter in sort_filters %}
+                  <option value="{{ sort_filter.value }}" {% if sort_filter.is_active %}selected{% endif %}>
+                    {{ sort_filter.label }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <div class="projects-search-actions">
+                <button class="solid-button" type="submit">Apply Filters</button>
+                <a class="ghost-button" href="/your-fundraisers#fundraiser-library">Clear Filters</a>
+              </div>
+            </form>
+
+            {% if campaigns %}
+            <div class="fundraiser-campaign-grid">
+              {% for campaign in campaigns %}
+              <article class="projects-campaign-card fundraiser-analytics-card">
+                <div class="projects-campaign-card-head">
+                  <div class="public-campaign-heading">
+                    <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+                    <strong>{{ campaign.title }}</strong>
+                  </div>
+                  <span class="campaign-status-badge status-{{ campaign.status }}">{{ campaign.status_label }}</span>
+                </div>
+                <div class="fundraiser-analytics-metrics">
+                  <span>{{ campaign.view_count }} views</span>
+                  <span>{{ campaign.shortlist_count }} shortlists</span>
+                  <span>${{ "{:,}".format(campaign.amount_raised) }} raised</span>
+                  <span>{{ campaign.progress.progress_percentage }}% funded</span>
+                </div>
+                <div class="projects-campaign-card-meta">
+                  <span>{% if campaign.goal_amount %}${{ "{:,}".format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}</span>
+                  <span>{{ campaign.deadline and ("Deadline " ~ campaign.deadline) or "No deadline" }}</span>
+                  <span>Updated {{ campaign.updated_at }}</span>
+                </div>
+                <div class="fundraiser-card-actions">
+                  <button
+                    class="ghost-button fundraiser-analytics-open"
+                    type="button"
+                    data-fundraiser-title="{{ campaign.title }}"
+                    data-fundraiser-category="{{ campaign.category_label }}"
+                    data-fundraiser-status="{{ campaign.status_label }}"
+                    data-fundraiser-views="{{ campaign.view_count }}"
+                    data-fundraiser-shortlists="{{ campaign.shortlist_count }}"
+                    data-fundraiser-raised="${{ '{:,}'.format(campaign.amount_raised) }}"
+                    data-fundraiser-goal="{% if campaign.goal_amount %}${{ '{:,}'.format(campaign.goal_amount) }}{% else %}Goal pending{% endif %}"
+                    data-fundraiser-progress="{{ campaign.progress.progress_percentage }}%"
+                    data-fundraiser-funding-status="{{ campaign.progress.funding_status }}"
+                    data-fundraiser-deadline-status="{{ campaign.progress.deadline_status }}"
+                    data-fundraiser-latest-viewed="{{ campaign.latest_viewed_at or 'No views yet' }}"
+                    data-fundraiser-latest-shortlisted="{{ campaign.latest_shortlisted_at or 'No shortlists yet' }}"
+                    data-fundraiser-created="{{ campaign.created_at }}"
+                    data-fundraiser-updated="{{ campaign.updated_at }}"
+                    data-fundraiser-manage-url="/projects/manage/{{ campaign.id }}#campaign-workflow"
+                  >
+                    View details
+                  </button>
+                  <a class="solid-button" href="/projects/manage/{{ campaign.id }}#campaign-workflow">Manage workflow</a>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="projects-empty compact">
+              <p>No campaign matches the selected criteria.</p>
+            </div>
+            {% endif %}
+          </section>
+
+          <section class="settings-campaign-section" id="completed-campaigns">
+            <div class="projects-panel-head">
+              <div>
+                <p class="eyebrow">Campaign History Page</p>
+                <h2>Completed campaigns</h2>
+              </div>
+            </div>
+            {% if completed_campaigns %}
+            <div class="fundraiser-campaign-grid fundraiser-completed-grid">
+              {% for campaign in completed_campaigns %}
+              <article class="projects-campaign-card fundraiser-analytics-card is-completed">
+                <div class="projects-campaign-card-head">
+                  <div class="public-campaign-heading">
+                    <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+                    <strong>{{ campaign.title }}</strong>
+                  </div>
+                  <span class="campaign-status-badge status-published">Completed</span>
+                </div>
+                <div class="fundraiser-analytics-metrics">
+                  <span>{{ campaign.view_count }} views</span>
+                  <span>{{ campaign.shortlist_count }} shortlists</span>
+                  <span>${{ "{:,}".format(campaign.amount_raised) }} raised</span>
+                  <span>{{ campaign.progress.progress_percentage }}% funded</span>
+                </div>
+                <div class="fundraiser-card-actions">
+                  <button
+                    class="ghost-button fundraiser-analytics-open"
+                    type="button"
+                    data-fundraiser-title="{{ campaign.title }}"
+                    data-fundraiser-category="{{ campaign.category_label }}"
+                    data-fundraiser-status="Completed"
+                    data-fundraiser-views="{{ campaign.view_count }}"
+                    data-fundraiser-shortlists="{{ campaign.shortlist_count }}"
+                    data-fundraiser-raised="${{ '{:,}'.format(campaign.amount_raised) }}"
+                    data-fundraiser-goal="{% if campaign.goal_amount %}${{ '{:,}'.format(campaign.goal_amount) }}{% else %}Goal pending{% endif %}"
+                    data-fundraiser-progress="{{ campaign.progress.progress_percentage }}%"
+                    data-fundraiser-funding-status="{{ campaign.progress.funding_status }}"
+                    data-fundraiser-deadline-status="{{ campaign.progress.deadline_status }}"
+                    data-fundraiser-latest-viewed="{{ campaign.latest_viewed_at or 'No views yet' }}"
+                    data-fundraiser-latest-shortlisted="{{ campaign.latest_shortlisted_at or 'No shortlists yet' }}"
+                    data-fundraiser-created="{{ campaign.created_at }}"
+                    data-fundraiser-updated="{{ campaign.updated_at }}"
+                    data-fundraiser-manage-url="/projects/manage/{{ campaign.id }}#campaign-workflow"
+                  >
+                    Review performance
+                  </button>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="projects-empty compact">
+              <p>No completed campaigns are available yet.</p>
+            </div>
+            {% endif %}
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="fundraiser-analytics-modal" id="fundraiser-analytics-modal" hidden role="dialog" aria-modal="true" aria-labelledby="fundraiser-analytics-title">
+      <button class="public-campaign-modal-backdrop" type="button" aria-label="Close fundraiser analytics details" data-close-fundraiser-analytics="true"></button>
+      <section class="public-campaign-modal-panel fundraiser-analytics-modal-panel">
+        <button class="public-campaign-modal-close" type="button" aria-label="Close fundraiser analytics details" data-close-fundraiser-analytics="true">
+          ×
+        </button>
+        <div class="public-campaign-modal-content">
+          <div class="public-campaign-modal-head">
+            <span class="campaign-category-badge" id="fundraiser-analytics-category"></span>
+            <h2 id="fundraiser-analytics-title"></h2>
+          </div>
+          <div class="public-campaign-modal-meta">
+            <div class="public-campaign-modal-row">
+              <span>Status</span>
+              <strong id="fundraiser-analytics-status"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Views</span>
+              <strong id="fundraiser-analytics-views"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Shortlists</span>
+              <strong id="fundraiser-analytics-shortlists"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Raised</span>
+              <strong id="fundraiser-analytics-raised"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Goal</span>
+              <strong id="fundraiser-analytics-goal"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Progress</span>
+              <strong id="fundraiser-analytics-progress"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Funding status</span>
+              <strong id="fundraiser-analytics-funding-status"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Deadline status</span>
+              <strong id="fundraiser-analytics-deadline-status"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Latest viewed</span>
+              <strong id="fundraiser-analytics-latest-viewed"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Latest shortlisted</span>
+              <strong id="fundraiser-analytics-latest-shortlisted"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Created</span>
+              <strong id="fundraiser-analytics-created"></strong>
+            </div>
+            <div class="public-campaign-modal-row">
+              <span>Updated</span>
+              <strong id="fundraiser-analytics-updated"></strong>
+            </div>
+          </div>
+          <div class="public-campaign-modal-actions">
+            <a class="solid-button" id="fundraiser-analytics-manage-link" href="/your-fundraisers">Open workflow</a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="/static/site.js?v=20260418-f10-f13-features-1"></script>
+  </body>
+</html>

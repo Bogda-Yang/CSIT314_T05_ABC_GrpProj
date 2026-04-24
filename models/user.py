@@ -85,6 +85,7 @@ class UserProfile(Base):
     gender: Mapped[str | None] = mapped_column(String(30), nullable=True)
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     occupation: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    available_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -115,6 +116,7 @@ class UserProfile(Base):
                 gender=None,
                 age=None,
                 occupation=None,
+                available_balance=0,
                 created_at=now_dt(),
                 updated_at=now_dt(),
             )
@@ -133,6 +135,26 @@ class UserProfile(Base):
         session.add(profile)
 
     @staticmethod
+    def GetOrCreateProfile(session: Session, user_id: int) -> "UserProfile":
+        profile = UserProfile.GetProfileDetails(session, user_id)
+        if profile:
+            return profile
+
+        profile = UserProfile(
+            user_id=user_id,
+            contact_details="",
+            avatar_path=None,
+            gender=None,
+            age=None,
+            occupation=None,
+            available_balance=0,
+            created_at=now_dt(),
+            updated_at=now_dt(),
+        )
+        session.add(profile)
+        return profile
+
+    @staticmethod
     def UpdateAvatarPath(session: Session, user_id: int, avatar_path: str) -> "UserProfile":
         profile = UserProfile.GetProfileDetails(session, user_id)
         if not profile:
@@ -143,6 +165,7 @@ class UserProfile(Base):
                 gender=None,
                 age=None,
                 occupation=None,
+                available_balance=0,
                 created_at=now_dt(),
                 updated_at=now_dt(),
             )
@@ -150,6 +173,14 @@ class UserProfile(Base):
             return profile
 
         profile.avatar_path = avatar_path
+        profile.updated_at = now_dt()
+        session.add(profile)
+        return profile
+
+    @staticmethod
+    def AddAvailableBalance(session: Session, user_id: int, amount: int) -> "UserProfile":
+        profile = UserProfile.GetOrCreateProfile(session, user_id)
+        profile.available_balance = int(profile.available_balance or 0) + int(amount)
         profile.updated_at = now_dt()
         session.add(profile)
         return profile
