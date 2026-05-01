@@ -201,6 +201,7 @@
                   data-project-image="{{ campaign.cover_image_url or '' }}"
                   data-project-images='{{ campaign.image_urls|tojson }}'
                   data-project-is-favourite="{{ 'true' if campaign.is_favourite else 'false' }}"
+                  data-project-is-local="{{ 'true' if campaign.actions_disabled else 'false' }}"
                 >
                   <div class="public-campaign-image">
                     {% if campaign.cover_image_url %}
@@ -404,7 +405,7 @@
     </div>
 
     <script
-      src="/static/site.js?v=20260423-modal-published-time-1"
+      src="/static/site.js?v=20260501-project-flash-target-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     ></script>
   </body>

@@ -37,6 +37,10 @@ from services.donation_service import (
     normalize_projects_sort,
     serialize_donation_record,
 )
+from services.local_campaign_dataset import (
+    get_local_campaign_summaries,
+    use_local_campaign_dataset,
+)
 from services.user_service import (
     get_authenticated_user,
     get_template_user_context,
@@ -118,29 +122,67 @@ def projects_page(
     selected_sort = normalize_projects_sort(sort)
     search_query = q.strip()
 
-    with get_session() as session:
+    if use_local_campaign_dataset():
         favourite_campaign_ids: set[int] = set()
         try:
-            user = get_authenticated_user(request, session)
-        except HTTPException:
-            user = None
+            with get_session() as session:
+                try:
+                    user = get_authenticated_user(request, session)
+                except HTTPException:
+                    user = None
 
-        if user:
-            favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(session, user.id)
+                if user:
+                    favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(
+                        session,
+                        user.id,
+                    )
 
-        published_campaigns = get_published_campaign_summaries(
-            session,
-            selected_category,
-            search_query,
-            selected_sort,
-            favourite_campaign_ids=favourite_campaign_ids,
-        )
+                published_campaigns = get_local_campaign_summaries(
+                    selected_category,
+                    search_query,
+                    selected_sort,
+                    session=session,
+                    favourite_campaign_ids=favourite_campaign_ids,
+                )
+        except Exception as error:
+            print(f"Warning: unable to attach local campaigns to database records: {error}")
+            published_campaigns = get_local_campaign_summaries(
+                selected_category,
+                search_query,
+                selected_sort,
+                session=None,
+                favourite_campaign_ids=favourite_campaign_ids,
+            )
         primary_category_filters, overflow_category_filters = get_projects_category_filters(
             selected_category,
             search_query=search_query,
             selected_sort=selected_sort,
         )
         sort_filters = get_projects_sort_filters(selected_sort)
+    else:
+        with get_session() as session:
+            favourite_campaign_ids: set[int] = set()
+            try:
+                user = get_authenticated_user(request, session)
+            except HTTPException:
+                user = None
+
+            if user:
+                favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(session, user.id)
+
+            published_campaigns = get_published_campaign_summaries(
+                session,
+                selected_category,
+                search_query,
+                selected_sort,
+                favourite_campaign_ids=favourite_campaign_ids,
+            )
+            primary_category_filters, overflow_category_filters = get_projects_category_filters(
+                selected_category,
+                search_query=search_query,
+                selected_sort=selected_sort,
+            )
+            sort_filters = get_projects_sort_filters(selected_sort)
 
     user_context = get_template_user_context(request)
     flash_message = pop_flash_message(request)

@@ -10,6 +10,7 @@ from core.config import (
     BASE_DIR,
     CAMPAIGN_IMAGE_DIR,
     IS_RENDER,
+    LOCAL_CAMPAIGN_IMAGE_DIR,
     SUPABASE_AVATAR_BUCKET,
     SUPABASE_CAMPAIGN_BUCKET,
     USER_AVATAR_DIR,
@@ -36,6 +37,11 @@ CAMPAIGN_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/user-uploads", StaticFiles(directory=USER_AVATAR_DIR), name="user_uploads")
 app.mount("/campaign-uploads", StaticFiles(directory=CAMPAIGN_IMAGE_DIR), name="campaign_uploads")
+app.mount(
+    "/local-campaign-assets",
+    StaticFiles(directory=LOCAL_CAMPAIGN_IMAGE_DIR, check_dir=False),
+    name="local_campaign_assets",
+)
 
 app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
 

@@ -15,6 +15,10 @@ const campaignGoalForm = document.querySelector("#campaign-goal form");
 const campaignDescriptionForm = document.querySelector("#campaign-description form");
 const campaignDeadlineForm = document.querySelector("#campaign-deadline form");
 const impactRechargeModal = document.querySelector("#impact-recharge-modal");
+const projectsSearchForm = document.querySelector(".projects-search-filter-form");
+const projectsCategoryLinks = document.querySelectorAll(
+  ".projects-category-chip, .projects-category-menu-item"
+);
 
 // 校验密码规则：至少 6 位，且同时包含字母和数字
 function validatePasswordPolicy(password) {
@@ -51,6 +55,30 @@ if (userMenu) {
       dropdown?.setAttribute("hidden", "");
       toggle?.setAttribute("aria-expanded", "false");
     }
+  });
+}
+
+if (projectsSearchForm && projectsCategoryLinks.length > 0) {
+  const searchInput = projectsSearchForm.querySelector("input[name='q']");
+  const sortSelect = projectsSearchForm.querySelector("select[name='sort']");
+
+  projectsCategoryLinks.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const nextUrl = new URL(link.href, window.location.origin);
+      const currentSearchValue = (searchInput?.value || "").trim();
+      const currentSortValue = (sortSelect?.value || "").trim();
+
+      nextUrl.searchParams.delete("q");
+      if (currentSearchValue) {
+        nextUrl.searchParams.set("q", currentSearchValue);
+      }
+      if (currentSortValue) {
+        nextUrl.searchParams.set("sort", currentSortValue);
+      }
+
+      window.location.href = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+    });
   });
 }
 
@@ -369,6 +397,7 @@ if (publicCampaignModal) {
   const supportMessage = document.querySelector("#public-campaign-support-message");
   const favouriteForm = document.querySelector("#public-campaign-favourite-form");
   const favouriteButton = document.querySelector("#public-campaign-favourite-button");
+  const modalActions = document.querySelector(".public-campaign-modal-actions-below-photo");
   const supportConfirmModal = document.querySelector("#support-confirm-modal");
   const supportConfirmApproveButton = document.querySelector("#support-confirm-approve");
   const supportConfirmCancelButton = document.querySelector("#support-confirm-cancel");
@@ -421,6 +450,11 @@ if (publicCampaignModal) {
     supportConfirmationApproved = false;
     const ownerEmail = (button.dataset.projectOwnerEmail || "").trim().toLowerCase();
     const isOwnCampaign = Boolean(currentUserEmail && ownerEmail && currentUserEmail === ownerEmail);
+    const isLocalDatasetCampaign = button.dataset.projectIsLocal === "true";
+    const projectId = button.dataset.projectId || "";
+    const flashCampaignId = new URLSearchParams(window.location.search).get("campaign_id") || "";
+    const shouldShowProjectFlash =
+      Boolean(projectId && flashCampaignId && projectId === flashCampaignId);
     if (modalTitle) {
       modalTitle.textContent = button.dataset.projectTitle || "Campaign";
     }
@@ -466,8 +500,10 @@ if (publicCampaignModal) {
     currentProjectImageIndex = 0;
     renderProjectModalImage();
 
+    if (modalActions) {
+      modalActions.hidden = isLocalDatasetCampaign;
+    }
     if (favouriteForm && favouriteButton) {
-      const projectId = button.dataset.projectId;
       const isFavourite = button.dataset.projectIsFavourite === "true";
       favouriteForm.action = isFavourite
         ? `/projects/${projectId}/favourites/remove`
@@ -476,19 +512,22 @@ if (publicCampaignModal) {
         ? "Remove from favourites"
         : "Save to favourites";
       favouriteButton.className = isFavourite ? "ghost-button" : "solid-button";
+      favouriteForm.hidden = isLocalDatasetCampaign;
     }
     if (supportForm) {
-      supportForm.action = `/projects/${button.dataset.projectId}/support`;
-      supportForm.hidden = isOwnCampaign;
+      supportForm.action = `/projects/${projectId}/support`;
+      supportForm.hidden = isOwnCampaign || isLocalDatasetCampaign;
     }
     if (supportMessage) {
-      if (isOwnCampaign) {
+      if (isLocalDatasetCampaign) {
+        setAccountMessage(supportMessage, "");
+      } else if (isOwnCampaign) {
         setAccountMessage(
           supportMessage,
           "You cannot support your own campaign.",
           "error"
         );
-      } else if (projectsFlashMessage?.textContent?.trim()) {
+      } else if (shouldShowProjectFlash && projectsFlashMessage?.textContent?.trim()) {
         setAccountMessage(
           supportMessage,
           projectsFlashMessage.textContent.trim(),
@@ -501,10 +540,10 @@ if (publicCampaignModal) {
 
     publicCampaignModal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
-    syncProjectModalQuery(button.dataset.projectId || "");
+    syncProjectModalQuery(projectId);
 
-    if (button.dataset.projectId) {
-      fetch(`/api/projects/${button.dataset.projectId}/view`, {
+    if (projectId && !isLocalDatasetCampaign) {
+      fetch(`/api/projects/${projectId}/view`, {
         method: "POST",
       }).catch(() => {});
     }

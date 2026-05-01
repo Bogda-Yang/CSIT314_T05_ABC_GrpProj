@@ -121,3 +121,17 @@ SUPABASE_CAMPAIGN_BUCKET = (
 )
 SUPABASE_STORAGE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
+LOCAL_CAMPAIGN_DATASET_ENABLED = (
+    not IS_RENDER
+    and os.getenv("LOCAL_CAMPAIGN_DATASET_ENABLED", "true").strip().lower()
+    not in {"0", "false", "no", "off"}
+)
+LOCAL_CAMPAIGN_DATASET_XLSX = Path(
+    os.getenv(
+        "LOCAL_CAMPAIGN_DATASET_XLSX",
+        str(Path.home() / "Desktop" / "模拟数据" / "Mock up data.xlsx"),
+    )
+).expanduser()
+LOCAL_CAMPAIGN_IMAGE_DIR = Path(
+    os.getenv("LOCAL_CAMPAIGN_IMAGE_DIR", str(BASE_DIR / "assets" / "images"))
+).expanduser()
