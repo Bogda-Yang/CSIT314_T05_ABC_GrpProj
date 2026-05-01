@@ -46,6 +46,107 @@ from models.user import UserAccount
 from services.user_service import is_admin_email, set_flash_message
 
 
+SIMULATED_FUNDRAISER_EMAIL = "simulated-user-1@fireflyfund.local"
+SIMULATED_FEATURED_CAMPAIGNS = (
+    {
+        "asset": "gtq",
+        "title": "Restore the ability to act",
+        "category": "emergencies",
+        "goal_amount": 10000,
+        "amount_raised": 6400,
+        "description": (
+            "Guang Touqiang was badly injured during a forest expedition and is now "
+            "paralyzed in both lower limbs. This campaign supports surgery, "
+            "rehabilitation, and long-term care."
+        ),
+    },
+    {
+        "asset": "br",
+        "title": "Help a blind and paralyzed writer share his work.",
+        "category": "other",
+        "goal_amount": 10000,
+        "amount_raised": 8100,
+        "description": (
+            "Baoer Kechajin has lost his eyesight and lives with full-body paralysis, "
+            "yet he still wants to complete and publish his writing."
+        ),
+    },
+    {
+        "asset": "dz",
+        "title": "Help children in mountainous areas go to school",
+        "category": "education",
+        "goal_amount": 10000,
+        "amount_raised": 4900,
+        "description": (
+            "Children in remote mountain communities need support for school fees, "
+            "supplies, and transport so they can continue their education."
+        ),
+    },
+)
+
+
+def ensure_simulated_featured_campaigns(session: Session) -> None:
+    simulated_user = UserAccount.GetUserByEmail(session, SIMULATED_FUNDRAISER_EMAIL)
+    if not simulated_user:
+        simulated_user = UserAccount.CreateUser(
+            "Simulated User 1",
+            SIMULATED_FUNDRAISER_EMAIL,
+            str(uuid.uuid4()),
+        )
+        UserAccount.SaveUser(session, simulated_user)
+        session.flush()
+
+    existing_campaigns = FundraisingCampaign.GetCampaignsByOwner(session, simulated_user.id)
+    existing_by_title = {campaign.title: campaign for campaign in existing_campaigns}
+    has_changes = False
+
+    for campaign_data in SIMULATED_FEATURED_CAMPAIGNS:
+        campaign = existing_by_title.get(campaign_data["title"])
+        if not campaign:
+            campaign = FundraisingCampaign.CreateCampaign(
+                simulated_user.id,
+                campaign_data["title"],
+                campaign_data["category"],
+            )
+            campaign.goal_amount = campaign_data["goal_amount"]
+            campaign.amount_raised = campaign_data["amount_raised"]
+            campaign.view_count = 0
+            campaign.description = campaign_data["description"]
+            campaign.deadline = "2026-09-04"
+            campaign.workflow_stage = 5
+            campaign.status = "published"
+            campaign.submitted_at = now_dt()
+            campaign.reviewed_at = now_dt()
+            campaign.published_at = now_dt()
+            FundraisingCampaign.SaveCampaignDraft(session, campaign)
+            session.flush()
+            has_changes = True
+        else:
+            campaign.category = campaign_data["category"]
+            campaign.goal_amount = campaign_data["goal_amount"]
+            campaign.description = campaign_data["description"]
+            campaign.deadline = "2026-09-04"
+            campaign.workflow_stage = max(campaign.workflow_stage or 0, 5)
+            campaign.status = "published"
+            if campaign.published_at is None:
+                campaign.published_at = now_dt()
+            campaign.updated_at = now_dt()
+            session.add(campaign)
+            has_changes = True
+
+        asset_path = f"asset:{campaign_data['asset']}"
+        image_records = CampaignImage.GetImageDetails(session, campaign.id)
+        if not any(record.image_path == asset_path for record in image_records):
+            CampaignImage.SaveImageRecords(
+                session,
+                CampaignImage.StoreImages(campaign.id, [asset_path]),
+            )
+            has_changes = True
+
+    if has_changes:
+        session.commit()
+
+
 def build_projects_url(
     campaign_id: int | None = None,
     review_campaign_id: int | None = None,

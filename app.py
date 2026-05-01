@@ -18,6 +18,7 @@ from core.db import engine, get_session
 from core.storage import SupabaseStorage
 from models import Base
 from routers import admin, donee, fundraiser, user
+from services.campaign_service import ensure_simulated_featured_campaigns
 from services.user_service import ensure_default_admin_account, request_validation_exception_handler
 
 
@@ -116,6 +117,7 @@ def startup() -> None:
             )
         with get_session() as session:
             ensure_default_admin_account(session)
+            ensure_simulated_featured_campaigns(session)
         return
 
     with engine.begin() as connection:
@@ -192,3 +194,4 @@ def startup() -> None:
     Base.metadata.create_all(bind=engine)
     with get_session() as session:
         ensure_default_admin_account(session)
+        ensure_simulated_featured_campaigns(session)
