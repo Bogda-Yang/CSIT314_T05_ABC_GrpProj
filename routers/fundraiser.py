@@ -6,7 +6,6 @@ from core.ui import templates
 from models.campaign import FundraisingCampaign
 from models.user import UserProfile
 from services.campaign_service import (
-    CAMPAIGN_CATEGORY_OPTIONS,
     CampaignApprovalController,
     CampaignAnalyticsController,
     CampaignController,
@@ -19,6 +18,7 @@ from services.campaign_service import (
     build_campaign_management_url,
     build_your_fundraisers_url,
     ensure_campaign_owner,
+    get_campaign_category_options,
     get_fundraiser_category_filters,
     get_fundraiser_lifecycle_filters,
     get_fundraiser_sort_filters,
@@ -72,7 +72,7 @@ def campaign_create_page(request: Request) -> HTMLResponse:
             "avatar_url": build_avatar_url(profile.avatar_path) if profile else None,
             "is_admin": is_admin_email(user.email),
             "flash_message": flash_message,
-            "category_options": CAMPAIGN_CATEGORY_OPTIONS,
+            "category_options": get_campaign_category_options(session),
             "campaigns": serialized_campaigns,
         },
     )
@@ -216,7 +216,7 @@ def campaign_management_page(
             "campaigns": serialized_campaigns,
             "selected_campaign": selected_campaign,
             "workflow_access": workflow_access,
-            "category_options": CAMPAIGN_CATEGORY_OPTIONS,
+            "category_options": get_campaign_category_options(session),
         },
     )
 

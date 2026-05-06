@@ -41,7 +41,7 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260423-active-nav-1"
+      href="/static/styles.css?v=20260504-testimonials-avatars-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
@@ -144,6 +144,52 @@
           </div>
         </section>
 
+        <section class="community-comments-section reveal" aria-label="Testimonials">
+          <h2 class="community-comments-title">Testimonials</h2>
+          <div class="community-comments-window">
+            <div class="community-comments-track">
+              {% for comment in community_comments %}
+              <article class="community-comment-row">
+                <span class="community-comment-avatar {{ comment.tone_class }}" aria-hidden="true">
+                  {% if comment.avatar_url %}
+                  <img src="{{ comment.avatar_url }}" alt="" />
+                  {% else %}
+                  {{ comment.avatar_initials }}
+                  {% endif %}
+                </span>
+                <div class="community-comment-body">
+                  <strong class="community-comment-name">{{ comment.name }}</strong>
+                  <p class="community-comment-text">{{ comment.comment }}</p>
+                </div>
+                <span class="community-comment-heat">
+                  <span aria-hidden="true">🔥</span>
+                  <strong>{{ comment.heat_label }}</strong>
+                </span>
+              </article>
+              {% endfor %}
+              {% for comment in community_comments %}
+              <article class="community-comment-row" aria-hidden="true">
+                <span class="community-comment-avatar {{ comment.tone_class }}">
+                  {% if comment.avatar_url %}
+                  <img src="{{ comment.avatar_url }}" alt="" />
+                  {% else %}
+                  {{ comment.avatar_initials }}
+                  {% endif %}
+                </span>
+                <div class="community-comment-body">
+                  <strong class="community-comment-name">{{ comment.name }}</strong>
+                  <p class="community-comment-text">{{ comment.comment }}</p>
+                </div>
+                <span class="community-comment-heat">
+                  <span>🔥</span>
+                  <strong>{{ comment.heat_label }}</strong>
+                </span>
+              </article>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+
         <section class="campaign-section" id="campaigns">
           <div class="section-heading reveal">
             <div>
@@ -239,23 +285,23 @@
             <div class="impact-grid">
               <article>
                 <span>Total support delivered</span>
-                <strong>$18,377,589</strong>
-                <p>Tracked across personal campaigns, family emergencies, and care requests.</p>
+                <strong>{{ impact_overview.total_support_label }}</strong>
+                <p>{{ impact_overview.total_support_copy }}</p>
               </article>
               <article>
-                <span>Families helped this year</span>
-                <strong>6,240</strong>
-                <p>Includes households receiving direct donor support through active campaigns.</p>
+                <span>Campaigns helped this year</span>
+                <strong>{{ impact_overview.campaigns_helped_label }}</strong>
+                <p>{{ impact_overview.campaigns_helped_copy }}</p>
               </article>
               <article>
                 <span>Average time to first donation</span>
-                <strong>3.2 hrs</strong>
-                <p>Many campaigns receive their first visible support on the same day they launch.</p>
+                <strong>{{ impact_overview.average_first_donation_label }}</strong>
+                <p>{{ impact_overview.average_first_donation_copy }}</p>
               </article>
               <article>
                 <span>Transparency score</span>
-                <strong>98/100</strong>
-                <p>Campaign updates, fund progress, and organizer details remain visible to donors.</p>
+                <strong>{{ impact_overview.transparency_score_label }}</strong>
+                <p>{{ impact_overview.transparency_score_copy }}</p>
               </article>
             </div>
           </div>
@@ -263,18 +309,26 @@
           <aside class="update-panel reveal delay-1">
             <p class="eyebrow">Latest campaign notes</p>
             <ul class="update-list">
+              {% if latest_campaign_notes %}
+              {% for note in latest_campaign_notes %}
               <li>
-                <strong>April 4</strong>
-                <span>A family campaign updated supporters after a successful surgery discharge.</span>
+                <strong>{{ note.time_label }}</strong>
+                <span>
+                  {{ note.donor_name }} donated {{ note.amount_label }} to
+                  {% if note.campaign_url %}
+                  <a href="{{ note.campaign_url }}">{{ note.campaign_title }}</a>.
+                  {% else %}
+                  {{ note.campaign_title }}.
+                  {% endif %}
+                </span>
               </li>
+              {% endfor %}
+              {% else %}
               <li>
-                <strong>April 1</strong>
-                <span>A donor-funded housing campaign reached its goal for temporary rent support.</span>
+                <strong>No records yet</strong>
+                <span>New donation activity will appear here after campaigns receive support.</span>
               </li>
-              <li>
-                <strong>March 28</strong>
-                <span>Campaign verification guidelines were updated for medical and family cases.</span>
-              </li>
+              {% endif %}
             </ul>
           </aside>
         </section>

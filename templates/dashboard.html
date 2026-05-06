@@ -41,7 +41,7 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260423-active-nav-1"
+      href="/static/styles.css?v=20260503-category-create-modal-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
@@ -113,6 +113,371 @@
         {% if flash_message %}
         <p class="account-message projects-flash {{ flash_message.kind }}">{{ flash_message.message }}</p>
         {% endif %}
+
+        <section class="projects-admin-section admin-management-section" id="admin-accounts">
+          <div class="projects-panel-head">
+            <div>
+              <p class="eyebrow">AdminDashboardPage</p>
+              <h2>User Accounts</h2>
+            </div>
+          </div>
+          <div class="admin-management-grid">
+            <section class="projects-panel admin-management-panel">
+              <form class="admin-filter-form" method="get" action="/dashboard#admin-accounts">
+                <label class="account-field">
+                  <span>Search Accounts</span>
+                  <input type="text" name="account_q" value="{{ account_search_query }}" placeholder="Search by username or email" />
+                </label>
+                <label class="account-field">
+                  <span>Filter Accounts</span>
+                  <select name="account_status">
+                    {% for value, label in account_status_options %}
+                    <option value="{{ value }}" {% if value == account_selected_status %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <div class="account-actions">
+                  <button class="solid-button" type="submit">Apply</button>
+                </div>
+              </form>
+              <div class="admin-table-scroll account-table-scroll">
+                <table class="admin-data-table">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Last Login</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for account in accounts %}
+                    <tr>
+                      <td>{{ account.username }}</td>
+                      <td>{{ account.email }}</td>
+                      <td><span class="campaign-status-badge status-{{ account.status }}">{{ account.status_label }}</span></td>
+                      <td>{{ account.last_login_at }}</td>
+                      <td>
+                        <a
+                          class="ghost-button compact-button"
+                          href="/dashboard?account_id={{ account.id }}&modal=account-details&account_q={{ account_search_query|urlencode }}&account_status={{ account_selected_status }}#admin-accounts"
+                        >
+                          View
+                        </a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="projects-admin-section admin-management-section" id="admin-categories">
+          <div class="projects-panel-head">
+            <div>
+              <p class="eyebrow">CategoryManagementPage</p>
+              <h2>Campaign Categories</h2>
+            </div>
+          </div>
+          <div class="admin-management-grid">
+            <section class="projects-panel admin-management-panel">
+              <form class="admin-filter-form" method="get" action="/dashboard#admin-categories">
+                <label class="account-field">
+                  <span>Search Categories</span>
+                  <input type="text" name="category_q" value="{{ category_search_query }}" placeholder="Search by name or description" />
+                </label>
+                <label class="account-field">
+                  <span>Filter Categories</span>
+                  <select name="category_status">
+                    {% for value, label in category_status_options %}
+                    <option value="{{ value }}" {% if value == category_selected_status %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <div class="account-actions">
+                  <button class="solid-button" type="submit">Apply</button>
+                </div>
+              </form>
+              <div class="admin-create-form">
+                <a
+                  class="solid-button"
+                  href="/dashboard?modal=create-category&category_q={{ category_search_query|urlencode }}&category_status={{ category_selected_status }}#admin-categories"
+                >
+                  Create Category
+                </a>
+              </div>
+              <div class="admin-table-scroll category-table-scroll">
+                <table class="admin-data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>Campaigns</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for category_item in categories %}
+                    <tr>
+                      <td>{{ category_item.name }}</td>
+                      <td><span class="campaign-status-badge status-{{ category_item.status }}">{{ category_item.status_label }}</span></td>
+                      <td>{{ category_item.campaign_count }}</td>
+                      <td>
+                        <a
+                          class="ghost-button compact-button"
+                          href="/dashboard?category_id={{ category_item.id }}&modal=category-details&category_q={{ category_search_query|urlencode }}&category_status={{ category_selected_status }}#admin-categories"
+                        >
+                          View
+                        </a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        {% if category_create_modal_open %}
+        <div class="dashboard-review-modal admin-detail-modal" role="dialog" aria-modal="true" aria-labelledby="category-create-title">
+          <a
+            class="dashboard-review-modal-backdrop"
+            href="/dashboard?category_q={{ category_search_query|urlencode }}&category_status={{ category_selected_status }}#admin-categories"
+            aria-label="Close category creation"
+          ></a>
+          <section class="dashboard-review-modal-panel admin-detail-modal-panel">
+            <a
+              class="dashboard-review-modal-close"
+              href="/dashboard?category_q={{ category_search_query|urlencode }}&category_status={{ category_selected_status }}#admin-categories"
+              aria-label="Close category creation"
+            >
+              ×
+            </a>
+            <div class="projects-panel-head dashboard-review-modal-head">
+              <div>
+                <p class="eyebrow">CategoryManagementPage</p>
+                <h2 id="category-create-title">Create Category</h2>
+              </div>
+            </div>
+            <form class="account-form" method="post" action="/admin/categories/create">
+              <label class="account-field">
+                <span>Category Name</span>
+                <input type="text" name="name" placeholder="Enter category name" required />
+              </label>
+              <label class="account-field">
+                <span>Description</span>
+                <input type="text" name="description" placeholder="Optional description" />
+              </label>
+              <div class="account-actions">
+                <button class="solid-button" type="submit">Create Category</button>
+              </div>
+            </form>
+          </section>
+        </div>
+        {% endif %}
+
+        {% if selected_account and account_modal_open %}
+        <div class="dashboard-review-modal admin-detail-modal" role="dialog" aria-modal="true" aria-labelledby="account-detail-title">
+          <a
+            class="dashboard-review-modal-backdrop"
+            href="/dashboard?account_q={{ account_search_query|urlencode }}&account_status={{ account_selected_status }}#admin-accounts"
+            aria-label="Close account details"
+          ></a>
+          <section class="dashboard-review-modal-panel admin-detail-modal-panel">
+            <a
+              class="dashboard-review-modal-close"
+              href="/dashboard?account_q={{ account_search_query|urlencode }}&account_status={{ account_selected_status }}#admin-accounts"
+              aria-label="Close account details"
+            >
+              ×
+            </a>
+            <div class="projects-panel-head dashboard-review-modal-head">
+              <div>
+                <p class="eyebrow">AccountManagementPage</p>
+                <h2 id="account-detail-title">Account Details</h2>
+              </div>
+              <span class="campaign-status-badge status-{{ selected_account.status }}">
+                {{ selected_account.status_label }}
+              </span>
+            </div>
+
+            <div class="projects-summary-grid">
+              <article><span>Username</span><strong>{{ selected_account.username }}</strong></article>
+              <article><span>Email</span><strong>{{ selected_account.email }}</strong></article>
+              <article><span>Status</span><strong>{{ selected_account.status_label }}</strong></article>
+              <article><span>Last Login</span><strong>{{ selected_account.last_login_at }}</strong></article>
+            </div>
+
+            <div class="admin-inline-actions">
+              <form method="post" action="/admin/accounts/{{ selected_account.id }}/deactivate">
+                <button class="ghost-button" type="submit" {% if selected_account.status == "inactive" or selected_account.is_admin_account %}disabled{% endif %}>
+                  Deactivate Account
+                </button>
+              </form>
+              <form method="post" action="/admin/accounts/{{ selected_account.id }}/delete">
+                <button class="danger-button" type="submit" {% if selected_account.is_admin_account %}disabled{% endif %}>
+                  Delete Account
+                </button>
+              </form>
+            </div>
+
+            <div class="admin-activity-list">
+              <h3>User Activity</h3>
+              {% if selected_account.activity_data %}
+              {% for activity in selected_account.activity_data %}
+              <article class="admin-activity-item">
+                <strong>{{ activity.activity_type }}</strong>
+                <span>{{ activity.created_at }}</span>
+                <p>{{ activity.details }}</p>
+              </article>
+              {% endfor %}
+              {% else %}
+              <p class="projects-panel-copy">No activity has been recorded for this account yet.</p>
+              {% endif %}
+            </div>
+          </section>
+        </div>
+        {% endif %}
+
+        {% if selected_category_record and category_modal_open %}
+        <div class="dashboard-review-modal admin-detail-modal" role="dialog" aria-modal="true" aria-labelledby="category-detail-title">
+          <a
+            class="dashboard-review-modal-backdrop"
+            href="/dashboard?category_q={{ category_search_query|urlencode }}&category_status={{ category_selected_status }}#admin-categories"
+            aria-label="Close category details"
+          ></a>
+          <section class="dashboard-review-modal-panel admin-detail-modal-panel">
+            <a
+              class="dashboard-review-modal-close"
+              href="/dashboard?category_q={{ category_search_query|urlencode }}&category_status={{ category_selected_status }}#admin-categories"
+              aria-label="Close category details"
+            >
+              ×
+            </a>
+            <div class="projects-panel-head dashboard-review-modal-head">
+              <div>
+                <p class="eyebrow">Category Details</p>
+                <h2 id="category-detail-title">Update or Delete</h2>
+              </div>
+              <span class="campaign-status-badge status-{{ selected_category_record.status }}">
+                {{ selected_category_record.status_label }}
+              </span>
+            </div>
+
+            <form class="account-form" method="post" action="/admin/categories/{{ selected_category_record.id }}/update">
+              <label class="account-field">
+                <span>Category Name</span>
+                <input type="text" name="name" value="{{ selected_category_record.name }}" required />
+              </label>
+              <label class="account-field">
+                <span>Description</span>
+                <textarea name="description" rows="3">{{ selected_category_record.description }}</textarea>
+              </label>
+              <label class="account-field">
+                <span>Status</span>
+                <select name="status">
+                  <option value="active" {% if selected_category_record.status == "active" %}selected{% endif %}>Active</option>
+                  <option value="inactive" {% if selected_category_record.status == "inactive" %}selected{% endif %}>Inactive</option>
+                </select>
+              </label>
+              <div class="account-actions">
+                <button class="solid-button" type="submit">Update Category</button>
+              </div>
+            </form>
+
+            <form method="post" action="/admin/categories/{{ selected_category_record.id }}/delete">
+              <button class="danger-button" type="submit" {% if selected_category_record.campaign_count > 0 %}disabled{% endif %}>
+                Delete Category
+              </button>
+            </form>
+            {% if selected_category_record.campaign_count > 0 %}
+            <p class="projects-panel-copy">This category is used by {{ selected_category_record.campaign_count }} campaign(s), so it cannot be deleted.</p>
+            {% endif %}
+          </section>
+        </div>
+        {% endif %}
+
+        <section class="projects-admin-section admin-management-section" id="admin-reports">
+          <div class="projects-panel admin-report-panel">
+            <div class="projects-panel-head">
+              <div>
+                <p class="eyebrow">ReportManagementPage</p>
+                <h2>{{ platform_report.title }}</h2>
+              </div>
+              <form class="dashboard-review-filters" method="get" action="/dashboard#admin-reports">
+                <label class="dashboard-review-filter">
+                  <span>Report Type</span>
+                  <select name="report_type" onchange="this.form.submit()">
+                    {% for value, label in report_type_options %}
+                    <option value="{{ value }}" {% if value == selected_report_type %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                {% if selected_report_type == "daily" %}
+                <label class="dashboard-review-filter">
+                  <span>Select Day</span>
+                  <input type="date" name="report_date" value="{{ selected_report_period_value }}" onchange="this.form.submit()" />
+                </label>
+                {% elif selected_report_type == "weekly" %}
+                <label class="dashboard-review-filter">
+                  <span>Start Date</span>
+                  <input
+                    type="date"
+                    name="report_week_start"
+                    value="{{ selected_report_week_start_value }}"
+                    data-week-start-input
+                  />
+                </label>
+                <label class="dashboard-review-filter">
+                  <span>End Date</span>
+                  <input
+                    type="date"
+                    name="report_week_end"
+                    value="{{ selected_report_week_end_value }}"
+                    data-week-end-input
+                    onchange="this.form.submit()"
+                  />
+                </label>
+                {% else %}
+                <label class="dashboard-review-filter report-month-filter">
+                  <span>Select Month</span>
+                  <select class="report-month-select" name="report_month" onchange="this.form.submit()">
+                    {% for month_option in report_month_options %}
+                    <option value="{{ month_option.value }}" {% if month_option.is_active %}selected{% endif %}>
+                      {{ month_option.label }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </label>
+                {% endif %}
+                <button class="ghost-button compact-button" type="submit">Apply</button>
+              </form>
+            </div>
+            <p class="projects-panel-copy">
+              Period: {{ platform_report.period_label }}
+            </p>
+            <div class="projects-summary-grid admin-report-grid">
+              {% for metric_label, metric_value in platform_report.metrics %}
+              <article>
+                <span>{{ metric_label }}</span>
+                <strong>{{ metric_value }}</strong>
+              </article>
+              {% endfor %}
+            </div>
+            <div class="account-actions">
+              <a
+                class="solid-button"
+                href="/admin/reports/{{ selected_report_type }}/export?{% if selected_report_type == 'daily' %}report_date={{ selected_report_period_value }}{% elif selected_report_type == 'weekly' %}report_week_start={{ selected_report_week_start_value }}&report_week_end={{ selected_report_week_end_value }}{% else %}report_month={{ selected_report_period_value }}{% endif %}"
+              >
+                Export {{ selected_report_type|title }} Report
+              </a>
+            </div>
+          </div>
+        </section>
 
         <section class="projects-admin-section" id="admin-review">
           <div class="dashboard-review-grid">
@@ -291,7 +656,7 @@
     </div>
 
     <script
-      src="/static/site.js?v=20260412-dashboard-review-list-rows-1"
+      src="/static/site.js?v=20260502-dashboard-report-week-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     ></script>
   </body>

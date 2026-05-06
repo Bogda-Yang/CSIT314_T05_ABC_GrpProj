@@ -1,6 +1,6 @@
 # FireflyFund
 
-FireflyFund is a `Python + FastAPI + Supabase Postgres` fundraising platform prototype focused on person-to-person and family support.
+FireflyFund is a `Python + FastAPI + SQLAlchemy` fundraising platform prototype focused on person-to-person and family support. Local development uses SQLite, while Render deployment can use Supabase Postgres and Supabase Storage.
 
 ## Current Features
 
@@ -23,14 +23,16 @@ FireflyFund is a `Python + FastAPI + Supabase Postgres` fundraising platform pro
 - Campaign image upload with up to 5 images per campaign
 - Password change
 - Delete account
-- Supabase Postgres storage for shared multi-user data
-- Supabase Storage for user avatars and campaign images
+- SQLite local database for development demo data
+- Supabase Postgres storage for shared Render deployment data
+- Supabase Storage for user avatars and campaign images on Render
 
 ## Backend Stack
 
 - `FastAPI`
 - `SQLAlchemy`
-- `Supabase Postgres`
+- `SQLite` locally
+- `Supabase Postgres` on Render
 - `Jinja2`
 - `python-dotenv`
 - `python-multipart`
@@ -39,13 +41,33 @@ FireflyFund is a `Python + FastAPI + Supabase Postgres` fundraising platform pro
 ## Main Files
 
 ```text
-main.py
+app.py
+core/
+  config.py
+  db.py
+  storage.py
+models/
+  user.py
+  campaign.py
+  donation.py
+  admin.py
+routers/
+  user.py
+  donee.py
+  fundraiser.py
+  admin.py
+services/
+  user_service.py
+  campaign_service.py
+  donation_service.py
+  admin_service.py
 templates/
   index.html
   about.html
   auth.html
   profile.html
   settings.html
+  dashboard.html
 static/
   styles.css
   auth.css
@@ -55,7 +77,9 @@ assets/
   images/
 uploads/
   avatars/
+  campaigns/
 docs/
+scripts/
 requirements.txt
 start.sh
 ```
@@ -64,23 +88,36 @@ start.sh
 
 Create a local `.env` file based on `.env.example`.
 
-Required values:
+Required for local development:
 
-- `DATABASE_URL`
 - `SECRET_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+
+Required for email verification and password reset:
+
 - `SMTP_USER`
 - `SMTP_PASS`
 - `SMTP_HOST`
 - `SMTP_PORT`
 
+Required for Render/Supabase deployment:
+
+- `DATABASE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
 Optional values:
 
+- `SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_AVATAR_BUCKET`
 - `SUPABASE_CAMPAIGN_BUCKET`
 
-Example Supabase connection string:
+Example local database value:
+
+```env
+DATABASE_URL=sqlite:///./fireflyfund_local.db
+```
+
+Example Supabase connection string for Render:
 
 ```env
 DATABASE_URL=postgresql+psycopg2://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:6543/postgres

@@ -1056,3 +1056,29 @@ if (campaignDeadlineForm) {
     });
   }
 }
+
+const reportWeekStartInput = document.querySelector("[data-week-start-input]");
+const reportWeekEndInput = document.querySelector("[data-week-end-input]");
+
+if (reportWeekStartInput && reportWeekEndInput) {
+  reportWeekStartInput.addEventListener("change", () => {
+    if (!reportWeekStartInput.value) {
+      reportWeekStartInput.form?.submit();
+      return;
+    }
+
+    const startDate = new Date(`${reportWeekStartInput.value}T00:00:00`);
+    if (Number.isNaN(startDate.getTime())) {
+      reportWeekStartInput.form?.submit();
+      return;
+    }
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    const year = endDate.getFullYear();
+    const month = String(endDate.getMonth() + 1).padStart(2, "0");
+    const day = String(endDate.getDate()).padStart(2, "0");
+    reportWeekEndInput.value = `${year}-${month}-${day}`;
+    reportWeekStartInput.form?.submit();
+  });
+}

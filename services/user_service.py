@@ -24,18 +24,24 @@ from core.config import (
     USER_AVATAR_DIR,
 )
 from core.db import get_session
-from core.security import hash_value, make_salt, now_dt
+from core.security import ensure_aware_dt, hash_value, make_salt, now_dt
 from core.storage import build_avatar_url, delete_uploaded_asset, store_uploaded_asset
 from models.user import (
     AuthenticationToken,
     PasswordHistory,
     PasswordResetCode,
     UserAccount,
+    UserActivityLog,
     UserProfile,
     UserSession,
     VerificationCode,
 )
+from models.campaign import CampaignImage, CampaignViewRecord, FundraisingCampaign, RejectionRecord
 from models.donation import DonationRecord, FavouriteCampaign
+
+
+DELETED_ACCOUNT_EMAIL = "deleted-account@fireflyfund.local"
+DELETED_ACCOUNT_USERNAME = "Deleted Account"
 
 
 def request_validation_exception_handler(
@@ -331,6 +337,8 @@ def get_authenticated_user(request: Request, session: Session) -> UserAccount:
         or auth_record.session_key != user_session.session_key
     ):
         raise HTTPException(status_code=401, detail="Authentication required.")
+    if (user_account.status or "active") != "active":
+        raise HTTPException(status_code=403, detail="This account has been deactivated.")
 
     return user_account
 
@@ -399,7 +407,7 @@ class EmailVerification:
         record = session.get(VerificationCode, email)
         if not record:
             raise HTTPException(status_code=400, detail="Request a verification code first.")
-        if record.expires_at < now_dt():
+        if ensure_aware_dt(record.expires_at) < now_dt():
             raise HTTPException(status_code=400, detail="Verification code has expired.")
 
         candidate_hash = hash_value(code, record.salt)
@@ -439,7 +447,7 @@ class PasswordResetVerification:
         record = session.get(PasswordResetCode, email)
         if not record:
             raise HTTPException(status_code=400, detail="Request a reset code first.")
-        if record.expires_at < now_dt():
+        if ensure_aware_dt(record.expires_at) < now_dt():
             raise HTTPException(status_code=400, detail="Reset code has expired.")
 
         candidate_hash = hash_value(code, record.salt)
@@ -531,6 +539,8 @@ class AuthController:
         user = UserAccount.GetUserByEmail(session, email)
         if not user or not UserAccount.CheckPassword(user, password):
             raise HTTPException(status_code=401, detail="Invalid email or password.")
+        if (user.status or "active") != "active":
+            raise HTTPException(status_code=403, detail="This account has been deactivated.")
         return user
 
     @staticmethod
@@ -541,6 +551,8 @@ class AuthController:
 
         auth_token = AuthenticationToken.CreateToken(user_session.session_key)
         session.add(auth_token)
+        UserAccount.MarkLastLogin(user)
+        UserActivityLog.RecordActivity(session, user.id, "login", "User logged in successfully.")
         session.commit()
 
         request.session["user_email"] = user.email
@@ -900,6 +912,22 @@ class ForgotPasswordController:
 
 class DeleteAccountController:
     @staticmethod
+    def GetDeletedAccountPlaceholder(session: Session) -> UserAccount:
+        placeholder = UserAccount.GetUserByEmail(session, DELETED_ACCOUNT_EMAIL)
+        if placeholder:
+            return placeholder
+
+        placeholder = UserAccount.CreateUser(
+            DELETED_ACCOUNT_USERNAME,
+            DELETED_ACCOUNT_EMAIL,
+            f"{make_salt()}{make_salt()}",
+        )
+        placeholder.status = "inactive"
+        UserAccount.SaveUser(session, placeholder)
+        session.flush()
+        return placeholder
+
+    @staticmethod
     def ValidationCurrentPassword(
         session: Session, user_id: int, current_password: str
     ) -> UserAccount:
@@ -907,15 +935,56 @@ class DeleteAccountController:
 
     @staticmethod
     def DeleteAccount(session: Session, user_account: UserAccount) -> None:
+        if user_account.email == DELETED_ACCOUNT_EMAIL:
+            raise HTTPException(status_code=400, detail="This system account cannot be deleted.")
+
+        replacement_account = DeleteAccountController.GetDeletedAccountPlaceholder(session)
+        DeleteAccountController.ClearOwnedCampaigns(
+            session,
+            user_account.id,
+            replacement_account.id,
+        )
+        DeleteAccountController.AnonymizeUserDonations(
+            session,
+            user_account.id,
+            replacement_account.id,
+        )
+        DeleteAccountController.AnonymizeUserViewRecords(session, user_account.id)
         DeleteAccountController.ClearUserProfile(session, user_account.id)
         DeleteAccountController.ClearPasswordHistory(session, user_account.id)
-        DeleteAccountController.ClearUserDonations(session, user_account.id)
         DeleteAccountController.ClearUserFavourites(session, user_account.id)
         DeleteAccountController.ClearUserSessions(session, user_account.id)
         DeleteAccountController.ClearVerificationRecords(session, user_account.email)
+        UserActivityLog.DeleteUserActivity(session, user_account.id)
         session.flush()
         UserAccount.DeleteUser(session, user_account)
         session.commit()
+
+    @staticmethod
+    def ClearOwnedCampaigns(
+        session: Session, user_id: int, replacement_owner_id: int
+    ) -> None:
+        owned_campaigns = list(
+            session.scalars(
+                select(FundraisingCampaign).where(FundraisingCampaign.owner_id == user_id)
+            )
+        )
+        for campaign in owned_campaigns:
+            CampaignImage.DeleteImageRecords(session, campaign.id)
+            RejectionRecord.DeleteCampaignRejectionRecords(session, campaign.id)
+            FavouriteCampaign.DeleteCampaignFavouriteRecords(session, campaign.id)
+            FundraisingCampaign.MarkDeleted(campaign, replacement_owner_id)
+            session.add(campaign)
+
+    @staticmethod
+    def AnonymizeUserDonations(
+        session: Session, user_id: int, replacement_user_id: int
+    ) -> None:
+        DonationRecord.ReassignUserDonationRecords(session, user_id, replacement_user_id)
+
+    @staticmethod
+    def AnonymizeUserViewRecords(session: Session, user_id: int) -> None:
+        CampaignViewRecord.AnonymizeUserViewRecords(session, user_id)
 
     @staticmethod
     def ClearUserProfile(session: Session, user_id: int) -> None:
@@ -925,7 +994,7 @@ class DeleteAccountController:
                 delete_uploaded_asset(
                     SUPABASE_AVATAR_BUCKET, USER_AVATAR_DIR, profile.avatar_path
                 )
-            session.delete(profile)
+            UserProfile.DeleteProfile(session, user_id)
 
     @staticmethod
     def ClearPasswordHistory(session: Session, user_id: int) -> None:
@@ -941,7 +1010,12 @@ class DeleteAccountController:
 
     @staticmethod
     def ClearUserDonations(session: Session, user_id: int) -> None:
-        DonationRecord.DeleteUserDonationRecords(session, user_id)
+        replacement_account = DeleteAccountController.GetDeletedAccountPlaceholder(session)
+        DeleteAccountController.AnonymizeUserDonations(
+            session,
+            user_id,
+            replacement_account.id,
+        )
 
     @staticmethod
     def ClearUserSessions(session: Session, user_id: int) -> None:

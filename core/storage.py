@@ -184,7 +184,7 @@ def delete_uploaded_asset(bucket_name: str, local_dir: Path, stored_path: str | 
 def build_avatar_url(avatar_path: str | None) -> str | None:
     if not avatar_path:
         return None
-    if SUPABASE_URL and is_supabase_storage_path(avatar_path):
+    if SupabaseStorage.IsConfigured() and SUPABASE_URL and is_supabase_storage_path(avatar_path):
         return SupabaseStorage.BuildPublicUrl(SUPABASE_AVATAR_BUCKET, avatar_path)
     return f"/user-uploads/{avatar_path}"
 
@@ -195,6 +195,6 @@ def build_campaign_image_url(image_path: str | None) -> str | None:
     if image_path.startswith("asset:"):
         asset_name = image_path.removeprefix("asset:").strip().strip("/")
         return f"/assets/{asset_name}" if asset_name else None
-    if SUPABASE_URL and is_supabase_storage_path(image_path):
+    if SupabaseStorage.IsConfigured() and SUPABASE_URL and is_supabase_storage_path(image_path):
         return SupabaseStorage.BuildPublicUrl(SUPABASE_CAMPAIGN_BUCKET, image_path)
     return f"/campaign-uploads/{image_path}"

@@ -9,6 +9,12 @@ def now_dt() -> datetime:
     return datetime.now(SINGAPORE_TZ)
 
 
+def ensure_aware_dt(value: datetime) -> datetime:
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        return value.replace(tzinfo=SINGAPORE_TZ)
+    return value.astimezone(SINGAPORE_TZ)
+
+
 def hash_value(value: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac(
         "sha256", value.encode("utf-8"), salt.encode("utf-8"), 120_000

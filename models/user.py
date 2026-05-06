@@ -2,7 +2,7 @@ import hmac
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, select
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, delete, func, or_, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from core.security import hash_value, make_salt, now_dt
@@ -18,6 +18,8 @@ class UserAccount(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     salt: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @staticmethod
     def CreateUser(username: str, email: str, password: str) -> "UserAccount":
@@ -28,6 +30,8 @@ class UserAccount(Base):
             password_hash=hash_value(password, password_salt),
             salt=password_salt,
             created_at=now_dt(),
+            status="active",
+            last_login_at=None,
         )
 
     @staticmethod
@@ -50,6 +54,49 @@ class UserAccount(Base):
     @staticmethod
     def GetUserAccount(session: Session, user_id: int) -> "UserAccount | None":
         return session.get(UserAccount, user_id)
+
+    @staticmethod
+    def GetAllAccounts(session: Session) -> list["UserAccount"]:
+        statement = select(UserAccount).order_by(UserAccount.created_at.desc(), UserAccount.id.desc())
+        return list(session.scalars(statement))
+
+    @staticmethod
+    def GetAccountById(session: Session, user_id: int) -> "UserAccount | None":
+        return UserAccount.GetUserAccount(session, user_id)
+
+    @staticmethod
+    def SearchAccounts(session: Session, search_keywords: str) -> list["UserAccount"]:
+        clean_keywords = search_keywords.strip().lower()
+        if not clean_keywords:
+            return UserAccount.GetAllAccounts(session)
+        search_pattern = f"%{clean_keywords}%"
+        statement = (
+            select(UserAccount)
+            .where(
+                or_(
+                    func.lower(UserAccount.username).like(search_pattern),
+                    func.lower(UserAccount.email).like(search_pattern),
+                )
+            )
+            .order_by(UserAccount.created_at.desc(), UserAccount.id.desc())
+        )
+        return list(session.scalars(statement))
+
+    @staticmethod
+    def FilterAccounts(session: Session, status: str | None = None) -> list["UserAccount"]:
+        statement = select(UserAccount)
+        if status:
+            statement = statement.where(UserAccount.status == status)
+        statement = statement.order_by(UserAccount.created_at.desc(), UserAccount.id.desc())
+        return list(session.scalars(statement))
+
+    @staticmethod
+    def UpdateStatus(user_account: "UserAccount", status: str) -> None:
+        user_account.status = status
+
+    @staticmethod
+    def MarkLastLogin(user_account: "UserAccount") -> None:
+        user_account.last_login_at = now_dt()
 
     @staticmethod
     def DeleteUser(session: Session, user_account: "UserAccount") -> None:
@@ -92,6 +139,12 @@ class UserProfile(Base):
     @staticmethod
     def GetProfileDetails(session: Session, user_id: int) -> "UserProfile | None":
         return session.get(UserProfile, user_id)
+
+    @staticmethod
+    def DeleteProfile(session: Session, user_id: int) -> None:
+        profile = UserProfile.GetProfileDetails(session, user_id)
+        if profile:
+            session.delete(profile)
 
     @staticmethod
     def UpdateProfileDetails(
@@ -291,3 +344,65 @@ class AuthenticationToken(Base):
     @staticmethod
     def RevokeToken(token: "AuthenticationToken") -> None:
         token.revoked_at = now_dt()
+
+
+class UserActivityLog(Base):
+    __tablename__ = "user_activity_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    activity_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    details: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+
+    @staticmethod
+    def RecordActivity(
+        session: Session, user_id: int, activity_type: str, details: str = ""
+    ) -> "UserActivityLog":
+        activity = UserActivityLog(
+            user_id=user_id,
+            activity_type=activity_type.strip(),
+            details=details.strip(),
+            created_at=now_dt(),
+        )
+        session.add(activity)
+        return activity
+
+    @staticmethod
+    def GetUserActivity(
+        session: Session, user_id: int, limit: int = 10
+    ) -> list["UserActivityLog"]:
+        statement = (
+            select(UserActivityLog)
+            .where(UserActivityLog.user_id == user_id)
+            .order_by(UserActivityLog.created_at.desc(), UserActivityLog.id.desc())
+            .limit(limit)
+        )
+        return list(session.scalars(statement))
+
+    @staticmethod
+    def GetLastLogin(session: Session, user_id: int) -> datetime | None:
+        statement = (
+            select(UserActivityLog.created_at)
+            .where(
+                UserActivityLog.user_id == user_id,
+                UserActivityLog.activity_type == "login",
+            )
+            .order_by(UserActivityLog.created_at.desc(), UserActivityLog.id.desc())
+            .limit(1)
+        )
+        return session.scalar(statement)
+
+    @staticmethod
+    def DeleteUserActivity(session: Session, user_id: int) -> None:
+        session.execute(delete(UserActivityLog).where(UserActivityLog.user_id == user_id))
+
+
+class AccountStatus:
+    @staticmethod
+    def SetInactive(user_account: UserAccount) -> None:
+        UserAccount.UpdateStatus(user_account, "inactive")
+
+    @staticmethod
+    def GetStatus(user_account: UserAccount) -> str:
+        return user_account.status or "active"

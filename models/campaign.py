@@ -75,7 +75,10 @@ class FundraisingCampaign(Base):
     def GetCampaignsByOwner(session: Session, owner_id: int) -> list["FundraisingCampaign"]:
         statement = (
             select(FundraisingCampaign)
-            .where(FundraisingCampaign.owner_id == owner_id)
+            .where(
+                FundraisingCampaign.owner_id == owner_id,
+                FundraisingCampaign.status != "deleted",
+            )
             .order_by(FundraisingCampaign.updated_at.desc(), FundraisingCampaign.created_at.desc())
         )
         return list(session.scalars(statement))
@@ -280,6 +283,18 @@ class FundraisingCampaign(Base):
     @staticmethod
     def DeleteCampaign(session: Session, campaign: "FundraisingCampaign") -> None:
         session.delete(campaign)
+
+    @staticmethod
+    def MarkDeleted(
+        campaign: "FundraisingCampaign", replacement_owner_id: int | None = None
+    ) -> None:
+        if replacement_owner_id is not None:
+            campaign.owner_id = replacement_owner_id
+        campaign.status = "deleted"
+        campaign.submitted_at = None
+        campaign.reviewed_at = None
+        campaign.published_at = None
+        campaign.updated_at = now_dt()
 
     @staticmethod
     def _build_donee_campaigns_statement(
@@ -488,6 +503,17 @@ class CampaignViewRecord(Base):
     @staticmethod
     def DeleteCampaignViewRecords(session: Session, campaign_id: int) -> None:
         session.execute(delete(CampaignViewRecord).where(CampaignViewRecord.campaign_id == campaign_id))
+
+    @staticmethod
+    def AnonymizeUserViewRecords(session: Session, user_id: int) -> None:
+        view_records = list(
+            session.scalars(
+                select(CampaignViewRecord).where(CampaignViewRecord.viewer_user_id == user_id)
+            )
+        )
+        for record in view_records:
+            record.viewer_user_id = None
+            session.add(record)
 
 
 class RejectionRecord(Base):

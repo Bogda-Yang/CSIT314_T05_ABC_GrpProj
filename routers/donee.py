@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
@@ -34,12 +36,16 @@ from services.donation_service import (
     get_selected_category_label,
     get_selected_sort_label,
     get_supported_campaign_summaries,
+    get_public_donation_ledger,
+    get_home_community_comments,
     normalize_projects_sort,
+    normalize_transparency_donation_sort,
     serialize_donation_record,
-)
-from services.local_campaign_dataset import (
-    get_local_campaign_summaries,
-    use_local_campaign_dataset,
+    get_transparency_category_filters,
+    get_transparency_period_filters,
+    get_transparency_sort_filters,
+    get_transparency_summary,
+    normalize_transparency_donation_period,
 )
 from services.user_service import (
     get_authenticated_user,
@@ -60,12 +66,19 @@ class RechargeBalancePayload(BaseModel):
 
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request) -> HTMLResponse:
+    with get_session() as session:
+        impact_overview = ImpactController.GetHomeImpactOverview(session)
+        latest_campaign_notes = ImpactController.GetLatestCampaignNotes(session, limit=8)
+
     user_context = get_template_user_context(request)
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "request": request,
+            "impact_overview": impact_overview,
+            "latest_campaign_notes": latest_campaign_notes,
+            "community_comments": get_home_community_comments(),
             **user_context,
         },
     )
@@ -88,18 +101,61 @@ def about_page(request: Request) -> HTMLResponse:
 
 
 @router.get("/transparency", response_class=HTMLResponse)
-def transparency_page(request: Request) -> HTMLResponse:
+def transparency_page(
+    request: Request,
+    category: str | None = Query(default=None),
+    sort: str = Query(default="time_desc"),
+    period: str = Query(default="all"),
+) -> HTMLResponse:
     if should_redirect_direct_visit_to_home(request):
         return RedirectResponse(url="/", status_code=303)
+
+    requested_category = (category or "").strip().lower()
+    selected_category = None
+    if requested_category and requested_category != "all":
+        selected_category = normalize_campaign_category(requested_category)
+    selected_sort = normalize_transparency_donation_sort(sort)
+    selected_period = normalize_transparency_donation_period(period)
+
+    with get_session() as session:
+        donation_ledger = get_public_donation_ledger(
+            session,
+            selected_category,
+            selected_sort,
+            selected_period,
+        )
 
     user_context = get_template_user_context(request)
     return templates.TemplateResponse(
         request=request,
-        name="placeholder.html",
+        name="transparency.html",
         context={
             "request": request,
             "title": "Transparency",
-            "description": "Transparency page content is reserved for future updates.",
+            "selected_category": selected_category,
+            "selected_sort": selected_sort,
+            "selected_period": selected_period,
+            "category_filters": get_transparency_category_filters(
+                selected_category,
+                selected_sort,
+                selected_period,
+            ),
+            "sort_filters": get_transparency_sort_filters(
+                selected_category,
+                selected_sort,
+                selected_period,
+            ),
+            "period_filters": get_transparency_period_filters(
+                selected_category,
+                selected_sort,
+                selected_period,
+            ),
+            "donation_ledger": donation_ledger,
+            "ledger_summary": get_transparency_summary(
+                donation_ledger,
+                selected_category,
+                selected_period,
+            ),
             **user_context,
         },
     )
@@ -122,67 +178,29 @@ def projects_page(
     selected_sort = normalize_projects_sort(sort)
     search_query = q.strip()
 
-    if use_local_campaign_dataset():
+    with get_session() as session:
         favourite_campaign_ids: set[int] = set()
         try:
-            with get_session() as session:
-                try:
-                    user = get_authenticated_user(request, session)
-                except HTTPException:
-                    user = None
+            user = get_authenticated_user(request, session)
+        except HTTPException:
+            user = None
 
-                if user:
-                    favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(
-                        session,
-                        user.id,
-                    )
+        if user:
+            favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(session, user.id)
 
-                published_campaigns = get_local_campaign_summaries(
-                    selected_category,
-                    search_query,
-                    selected_sort,
-                    session=session,
-                    favourite_campaign_ids=favourite_campaign_ids,
-                )
-        except Exception as error:
-            print(f"Warning: unable to attach local campaigns to database records: {error}")
-            published_campaigns = get_local_campaign_summaries(
-                selected_category,
-                search_query,
-                selected_sort,
-                session=None,
-                favourite_campaign_ids=favourite_campaign_ids,
-            )
+        published_campaigns = get_published_campaign_summaries(
+            session,
+            selected_category,
+            search_query,
+            selected_sort,
+            favourite_campaign_ids=favourite_campaign_ids,
+        )
         primary_category_filters, overflow_category_filters = get_projects_category_filters(
             selected_category,
             search_query=search_query,
             selected_sort=selected_sort,
         )
         sort_filters = get_projects_sort_filters(selected_sort)
-    else:
-        with get_session() as session:
-            favourite_campaign_ids: set[int] = set()
-            try:
-                user = get_authenticated_user(request, session)
-            except HTTPException:
-                user = None
-
-            if user:
-                favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(session, user.id)
-
-            published_campaigns = get_published_campaign_summaries(
-                session,
-                selected_category,
-                search_query,
-                selected_sort,
-                favourite_campaign_ids=favourite_campaign_ids,
-            )
-            primary_category_filters, overflow_category_filters = get_projects_category_filters(
-                selected_category,
-                search_query=search_query,
-                selected_sort=selected_sort,
-            )
-            sort_filters = get_projects_sort_filters(selected_sort)
 
     user_context = get_template_user_context(request)
     flash_message = pop_flash_message(request)
@@ -503,8 +521,24 @@ def asset(asset_name: str) -> FileResponse:
         "zqh1": image_dir / "zqh1.jpg",
         "paynow": image_dir / "Paynow.jpg",
         "pawnow": image_dir / "Paynow.jpg",
+        "testimonial-elon-musk": image_dir / "Elon Musk.png",
+        "testimonial-mrbeast": image_dir / "MrBeast.png",
+        "testimonial-bill-gates": image_dir / "Bill Gates.png",
+        "testimonial-donald-trump": image_dir / "Donald Trump.png",
+        "testimonial-warren-buffett": image_dir / "Warren Buffett.png",
+        "testimonial-han-hong": image_dir / "韩红.png",
+        "testimonial-zhao-qiheng": image_dir / "赵启恒.jpg",
+        "testimonial-xu-weibin": image_dir / "许炜彬.png",
+        "testimonial-jeff-bezos": image_dir / "Jeff Bezos.png",
+        "testimonial-wang-sicong": image_dir / "王思聪.png",
+        "testimonial-einstein": image_dir / "Einstein.png",
+        "testimonial-hawking": image_dir / "霍金.png",
+        "testimonial-ma-yun": image_dir / "马云.png",
+        "testimonial-habao": image_dir / "哈宝.jpg",
     }
     file_path = allowed.get(asset_name)
+    if file_path is None and re.fullmatch(r"\d+(?:[.-]\d+)?\.(?:jpe?g|png|webp)", asset_name, re.IGNORECASE):
+        file_path = image_dir / asset_name
     if not file_path or not file_path.exists():
         raise HTTPException(status_code=404, detail="Asset not found.")
     return FileResponse(file_path)

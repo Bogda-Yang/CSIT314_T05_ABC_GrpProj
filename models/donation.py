@@ -7,6 +7,7 @@ from core.config import DEFAULT_DONATION_DATE_PERIOD
 from core.security import now_dt
 from models import Base
 from models.campaign import FundraisingCampaign
+from models.user import UserAccount
 
 
 class DonationRecord(Base):
@@ -138,8 +139,83 @@ class DonationRecord(Base):
         session.execute(delete(DonationRecord).where(DonationRecord.user_id == user_id))
 
     @staticmethod
+    def ReassignUserDonationRecords(
+        session: Session, user_id: int, replacement_user_id: int
+    ) -> None:
+        donation_records = list(
+            session.scalars(select(DonationRecord).where(DonationRecord.user_id == user_id))
+        )
+        for record in donation_records:
+            record.user_id = replacement_user_id
+            session.add(record)
+
+    @staticmethod
     def DeleteCampaignDonationRecords(session: Session, campaign_id: int) -> None:
         session.execute(delete(DonationRecord).where(DonationRecord.campaign_id == campaign_id))
+
+    @staticmethod
+    def GetPublicDonationLedger(
+        session: Session,
+        category: str | None = None,
+        sort_order: str = "time_desc",
+        date_period: str | None = None,
+        limit: int | None = None,
+    ) -> list[tuple["DonationRecord", UserAccount | None, FundraisingCampaign | None]]:
+        statement = (
+            select(DonationRecord, UserAccount, FundraisingCampaign)
+            .join(UserAccount, UserAccount.id == DonationRecord.user_id, isouter=True)
+            .join(
+                FundraisingCampaign,
+                FundraisingCampaign.id == DonationRecord.campaign_id,
+                isouter=True,
+            )
+        )
+        if category:
+            statement = statement.where(DonationRecord.campaign_category == category)
+        period_start = DonationRecord._resolve_public_period_start(date_period)
+        if period_start:
+            statement = statement.where(DonationRecord.donated_at >= period_start)
+
+        clean_sort_order = (sort_order or "time_desc").strip().lower()
+        if clean_sort_order == "time_asc":
+            statement = statement.order_by(DonationRecord.donated_at.asc(), DonationRecord.id.asc())
+        elif clean_sort_order == "amount_desc":
+            statement = statement.order_by(
+                DonationRecord.amount.desc(),
+                DonationRecord.donated_at.desc(),
+                DonationRecord.id.desc(),
+            )
+        elif clean_sort_order == "amount_asc":
+            statement = statement.order_by(
+                DonationRecord.amount.asc(),
+                DonationRecord.donated_at.desc(),
+                DonationRecord.id.desc(),
+            )
+        else:
+            statement = statement.order_by(DonationRecord.donated_at.desc(), DonationRecord.id.desc())
+
+        if limit is not None:
+            statement = statement.limit(max(1, int(limit)))
+
+        return list(session.execute(statement).all())
+
+    @staticmethod
+    def _resolve_public_period_start(date_period: str | None) -> datetime | None:
+        clean_period = (date_period or "all").strip().lower()
+        current_time = now_dt()
+        if clean_period == "1d":
+            return current_time - timedelta(days=1)
+        if clean_period == "7d":
+            return current_time - timedelta(days=7)
+        if clean_period == "30d":
+            return current_time - timedelta(days=30)
+        if clean_period == "90d":
+            return current_time - timedelta(days=90)
+        if clean_period == "180d":
+            return current_time - timedelta(days=180)
+        if clean_period == "365d":
+            return current_time - timedelta(days=365)
+        return None
 
     @staticmethod
     def _resolve_period_start(date_period: str | None) -> datetime | None:

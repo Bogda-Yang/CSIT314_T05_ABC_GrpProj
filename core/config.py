@@ -95,10 +95,17 @@ DONATION_DATE_PERIOD_OPTIONS = (
 )
 DONATION_DATE_PERIOD_LABELS = dict(DONATION_DATE_PERIOD_OPTIONS)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-if not DATABASE_URL:
+IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
+ONLINE_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+LOCAL_DATABASE_URL = os.getenv(
+    "LOCAL_DATABASE_URL",
+    f"sqlite:///{BASE_DIR / 'fireflyfund_local.db'}",
+).strip()
+DATABASE_URL = ONLINE_DATABASE_URL if IS_RENDER else LOCAL_DATABASE_URL
+
+if IS_RENDER and not ONLINE_DATABASE_URL:
     raise RuntimeError(
-        "DATABASE_URL is required. Configure a Supabase Postgres connection string in .env."
+        "DATABASE_URL is required on Render. Configure a Supabase Postgres connection string."
     )
 
 
@@ -110,7 +117,7 @@ def infer_supabase_url(database_url: str) -> str:
 
 
 SUPABASE_URL = (
-    os.getenv("SUPABASE_URL", "").strip().rstrip("/") or infer_supabase_url(DATABASE_URL)
+    os.getenv("SUPABASE_URL", "").strip().rstrip("/") or infer_supabase_url(ONLINE_DATABASE_URL)
 )
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 SUPABASE_AVATAR_BUCKET = (
@@ -119,17 +126,17 @@ SUPABASE_AVATAR_BUCKET = (
 SUPABASE_CAMPAIGN_BUCKET = (
     os.getenv("SUPABASE_CAMPAIGN_BUCKET", "campaign-images").strip() or "campaign-images"
 )
-SUPABASE_STORAGE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
-IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
-LOCAL_CAMPAIGN_DATASET_ENABLED = (
-    not IS_RENDER
-    and os.getenv("LOCAL_CAMPAIGN_DATASET_ENABLED", "true").strip().lower()
-    not in {"0", "false", "no", "off"}
-)
+SUPABASE_STORAGE_ENABLED = IS_RENDER and bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 LOCAL_CAMPAIGN_DATASET_XLSX = Path(
     os.getenv(
         "LOCAL_CAMPAIGN_DATASET_XLSX",
         str(Path.home() / "Desktop" / "模拟数据" / "Mock up data.xlsx"),
+    )
+).expanduser()
+LOCAL_DONATION_DATASET_XLSX = Path(
+    os.getenv(
+        "LOCAL_DONATION_DATASET_XLSX",
+        str(BASE_DIR / "docs" / "Mock_Donation_Data_Full_Coverage.xlsx"),
     )
 ).expanduser()
 LOCAL_CAMPAIGN_IMAGE_DIR = Path(

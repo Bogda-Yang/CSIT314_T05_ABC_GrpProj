@@ -41,7 +41,7 @@ from models.campaign import (
     FundraisingCampaign,
     RejectionRecord,
 )
-from models.donation import DonationRecord, FavouriteCampaign
+from models.donation import FavouriteCampaign
 from models.user import UserAccount
 from services.user_service import is_admin_email, set_flash_message
 
@@ -322,20 +322,37 @@ def humanize_campaign_status(status: str) -> str:
         "approved": "Approved",
         "published": "Published",
         "rejected": "Rejected",
+        "deleted": "Deleted",
     }.get(status, status.title())
 
 
 def humanize_campaign_category(category: str | None) -> str:
     if not category:
         return CAMPAIGN_CATEGORY_LABELS[DEFAULT_CAMPAIGN_CATEGORY]
-    return CAMPAIGN_CATEGORY_LABELS.get(category, category.title())
+    return CAMPAIGN_CATEGORY_LABELS.get(category, category.replace("_", " ").title())
 
 
 def normalize_campaign_category(category: str | None) -> str:
     clean_category = (category or "").strip().lower()
-    if clean_category not in CAMPAIGN_CATEGORY_LABELS:
+    if clean_category in CAMPAIGN_CATEGORY_LABELS:
+        return clean_category
+    if not re.fullmatch(r"[a-z0-9_]{2,40}", clean_category):
         raise HTTPException(status_code=400, detail="Choose a valid campaign category.")
     return clean_category
+
+
+def get_campaign_category_options(session: Session | None = None) -> tuple[tuple[str, str], ...]:
+    if session is None:
+        return CAMPAIGN_CATEGORY_OPTIONS
+    try:
+        from models.admin import Category
+
+        categories = [category for category in Category.GetAllCategories(session) if category.status == "active"]
+        if categories:
+            return tuple((category.value, category.name) for category in categories)
+    except Exception:
+        return CAMPAIGN_CATEGORY_OPTIONS
+    return CAMPAIGN_CATEGORY_OPTIONS
 
 
 def normalize_dashboard_review_sort(sort_order: str | None) -> str:
@@ -550,15 +567,19 @@ class CampaignController:
         FundraisingCampaign.SaveCampaignChanges(session, campaign)
 
     @staticmethod
-    def DeleteCampaign(session: Session, campaign: FundraisingCampaign) -> None:
+    def DeleteCampaign(
+        session: Session,
+        campaign: FundraisingCampaign,
+        replacement_owner_id: int | None = None,
+        commit: bool = True,
+    ) -> None:
         CampaignImage.DeleteImageRecords(session, campaign.id)
         RejectionRecord.DeleteCampaignRejectionRecords(session, campaign.id)
         FavouriteCampaign.DeleteCampaignFavouriteRecords(session, campaign.id)
-        DonationRecord.DeleteCampaignDonationRecords(session, campaign.id)
-        CampaignViewRecord.DeleteCampaignViewRecords(session, campaign.id)
-        session.flush()
-        CampaignController.RemoveCampaign(session, campaign)
-        session.commit()
+        FundraisingCampaign.MarkDeleted(campaign, replacement_owner_id)
+        session.add(campaign)
+        if commit:
+            session.commit()
 
     @staticmethod
     def RemoveCampaign(session: Session, campaign: FundraisingCampaign) -> None:

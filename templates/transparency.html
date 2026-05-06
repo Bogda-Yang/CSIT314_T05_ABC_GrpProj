@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transparency | FireflyFund</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        const retryPrefix = "fireflyfund-asset-retry";
+        function reloadOnce() {
+          try {
+            const retryKey = `${retryPrefix}:${window.location.pathname}`;
+            if (sessionStorage.getItem(retryKey) === "1") return;
+            sessionStorage.setItem(retryKey, "1");
+          } catch (error) {}
+          const url = new URL(window.location.href);
+          url.searchParams.set("_asset_retry", Date.now().toString());
+          window.location.replace(url.toString());
+        }
+        window.__fireflyReloadOnce = reloadOnce;
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            try {
+              const bg = window.getComputedStyle(document.body).backgroundImage || "";
+              if (!bg || bg === "none") {
+                reloadOnce();
+                return;
+              }
+              sessionStorage.removeItem(`${retryPrefix}:${window.location.pathname}`);
+            } catch (error) {}
+          }, 250);
+        });
+      })();
+    </script>
+    <link
+      id="page-style"
+      rel="stylesheet"
+      href="/static/styles.css?v=20260504-transparency-ledger-1"
+      onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
+    />
+  </head>
+  <body class="projects-flat-background">
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="FireflyFund Home">
+          <span class="brand-mark">
+            <img src="/assets/logo" alt="FireflyFund logo" />
+          </span>
+          <span class="brand-text">
+            <strong>FireflyFund</strong>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="/" class="{% if request.url.path == '/' %}is-active{% endif %}">Home</a>
+          <a href="/about" class="{% if request.url.path == '/about' %}is-active{% endif %}">About Us</a>
+          <a href="/transparency" class="{% if request.url.path == '/transparency' %}is-active{% endif %}">Transparency</a>
+          <a href="/projects" class="{% if request.url.path == '/projects' or request.url.path.startswith('/projects/') %}is-active{% endif %}">Projects</a>
+          {% if is_admin %}<a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}">Dashboard</a>{% endif %}
+        </nav>
+        <div class="header-actions">
+          {% if user_email %}
+          <div class="user-menu">
+            <button class="user-avatar-button" type="button" aria-expanded="false" aria-label="Open user menu">
+              <span class="user-avatar{% if avatar_url %} has-image{% endif %}" id="home-user-avatar" aria-hidden="true">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="{{ username or 'User' }} avatar" />
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="7.5" r="4.2" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M6 19c1.6-3.2 3.9-5 6-5s4.4 1.8 6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                {% endif %}
+              </span>
+            </button>
+            <div class="user-dropdown" hidden>
+              <div class="user-dropdown-name">{{ username or "User" }}</div>
+              <a class="user-dropdown-link" href="/profile">Profile</a>
+              <a class="user-dropdown-link" href="/your-fundraisers">Your Fundraisers</a>
+              <a class="user-dropdown-link" href="/your-impact">Your Impact</a>
+              <a class="user-dropdown-link" href="/wallet">Wallet</a>
+              <a class="user-dropdown-link" href="/settings">Settings</a>
+              <a class="user-dropdown-link danger" href="/logout">Log Out</a>
+            </div>
+          </div>
+          {% else %}
+          <a class="ghost-button" href="/auth?mode=login">Login</a>
+          <a class="solid-button" href="/auth?mode=register">Sign Up</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <main class="transparency-ledger-page" id="donation-ledger">
+        <section class="transparency-ledger-panel">
+          <div class="transparency-ledger-controls">
+            <div>
+              <p class="eyebrow">Project Category</p>
+              <div class="transparency-filter-row" aria-label="Filter donations by campaign category">
+                {% for category_filter in category_filters %}
+                <a
+                  class="transparency-filter-chip{% if category_filter.is_active %} is-active{% endif %}"
+                  href="{{ category_filter.url }}"
+                >
+                  {{ category_filter.label }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <p class="eyebrow">Sort Donations</p>
+              <div class="transparency-filter-row compact" aria-label="Sort donation ledger">
+                {% for sort_filter in sort_filters %}
+                <a
+                  class="transparency-filter-chip{% if sort_filter.is_active %} is-active{% endif %}"
+                  href="{{ sort_filter.url }}"
+                >
+                  {{ sort_filter.label }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <p class="eyebrow">Donation Period</p>
+              <div class="transparency-filter-row compact" aria-label="Filter donations by time period">
+                {% for period_filter in period_filters %}
+                <a
+                  class="transparency-filter-chip{% if period_filter.is_active %} is-active{% endif %}"
+                  href="{{ period_filter.url }}"
+                >
+                  {{ period_filter.label }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="transparency-ledger-summary">
+            <strong>{{ ledger_summary }}</strong>
+          </div>
+
+          {% if donation_ledger %}
+          <div class="transparency-ledger-list" aria-label="Donation transaction ledger">
+            {% for donation in donation_ledger %}
+            <article class="transparency-ledger-item">
+              <div class="transparency-ledger-main">
+                <span class="campaign-category-badge">{{ donation.category_label }}</span>
+                <h2>
+                  {% if donation.campaign_url %}
+                  <a href="{{ donation.campaign_url }}">{{ donation.campaign_title }}</a>
+                  {% else %}
+                  {{ donation.campaign_title }}
+                  {% endif %}
+                </h2>
+                <p>{{ donation.donor_name }} supported this campaign.</p>
+              </div>
+              <div class="transparency-ledger-meta">
+                <span>
+                  <small>Donor</small>
+                  <strong>{{ donation.donor_name }}</strong>
+                </span>
+                <span>
+                  <small>Time</small>
+                  <strong>{{ donation.donated_at }}</strong>
+                </span>
+                <span>
+                  <small>Amount</small>
+                  <strong>{{ donation.amount_label }}</strong>
+                </span>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="projects-empty compact">
+            <p>No donation records match the selected filters.</p>
+          </div>
+          {% endif %}
+        </section>
+      </main>
+    </div>
+    <script src="/static/site.js?v=20260423-home-avatar-fix-1"></script>
+  </body>
+</html>
