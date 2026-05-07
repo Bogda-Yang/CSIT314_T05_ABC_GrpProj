@@ -144,79 +144,61 @@ class PlatformActivity:
 
     @staticmethod
     def _activity_data(session: Session, start_at: datetime, end_at: datetime) -> dict[str, object]:
-        users_created = int(
-            session.scalar(
-                select(func.count(UserAccount.id)).where(
-                    UserAccount.created_at >= start_at,
-                    UserAccount.created_at < end_at,
-                )
-            )
-            or 0
-        )
-        campaigns_created = int(
-            session.scalar(
-                select(func.count(FundraisingCampaign.id)).where(
+        (
+            users_created,
+            campaigns_created,
+            campaigns_published,
+            donations_count,
+            donation_amount,
+            favourites_count,
+            views_count,
+        ) = session.execute(
+            select(
+                select(func.count(UserAccount.id))
+                .where(UserAccount.created_at >= start_at, UserAccount.created_at < end_at)
+                .scalar_subquery(),
+                select(func.count(FundraisingCampaign.id))
+                .where(
                     FundraisingCampaign.created_at >= start_at,
                     FundraisingCampaign.created_at < end_at,
                 )
-            )
-            or 0
-        )
-        campaigns_published = int(
-            session.scalar(
-                select(func.count(FundraisingCampaign.id)).where(
+                .scalar_subquery(),
+                select(func.count(FundraisingCampaign.id))
+                .where(
                     FundraisingCampaign.published_at >= start_at,
                     FundraisingCampaign.published_at < end_at,
                 )
-            )
-            or 0
-        )
-        donations_count = int(
-            session.scalar(
-                select(func.count(DonationRecord.id)).where(
-                    DonationRecord.donated_at >= start_at,
-                    DonationRecord.donated_at < end_at,
-                )
-            )
-            or 0
-        )
-        donation_amount = int(
-            session.scalar(
-                select(func.coalesce(func.sum(DonationRecord.amount), 0)).where(
-                    DonationRecord.donated_at >= start_at,
-                    DonationRecord.donated_at < end_at,
-                )
-            )
-            or 0
-        )
-        favourites_count = int(
-            session.scalar(
-                select(func.count(FavouriteCampaign.id)).where(
+                .scalar_subquery(),
+                select(func.count(DonationRecord.id))
+                .where(DonationRecord.donated_at >= start_at, DonationRecord.donated_at < end_at)
+                .scalar_subquery(),
+                select(func.coalesce(func.sum(DonationRecord.amount), 0))
+                .where(DonationRecord.donated_at >= start_at, DonationRecord.donated_at < end_at)
+                .scalar_subquery(),
+                select(func.count(FavouriteCampaign.id))
+                .where(
                     FavouriteCampaign.created_at >= start_at,
                     FavouriteCampaign.created_at < end_at,
                 )
-            )
-            or 0
-        )
-        views_count = int(
-            session.scalar(
-                select(func.count(CampaignViewRecord.id)).where(
+                .scalar_subquery(),
+                select(func.count(CampaignViewRecord.id))
+                .where(
                     CampaignViewRecord.viewed_at >= start_at,
                     CampaignViewRecord.viewed_at < end_at,
                 )
+                .scalar_subquery(),
             )
-            or 0
-        )
+        ).one()
         return {
             "period_start": start_at,
             "period_end": end_at,
-            "users_created": users_created,
-            "campaigns_created": campaigns_created,
-            "campaigns_published": campaigns_published,
-            "donations_count": donations_count,
-            "donation_amount": donation_amount,
-            "favourites_count": favourites_count,
-            "views_count": views_count,
+            "users_created": int(users_created or 0),
+            "campaigns_created": int(campaigns_created or 0),
+            "campaigns_published": int(campaigns_published or 0),
+            "donations_count": int(donations_count or 0),
+            "donation_amount": int(donation_amount or 0),
+            "favourites_count": int(favourites_count or 0),
+            "views_count": int(views_count or 0),
         }
 
     @staticmethod

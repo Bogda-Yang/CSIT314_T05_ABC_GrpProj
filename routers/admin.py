@@ -24,7 +24,7 @@ from services.admin_service import (
     get_report_month_options,
     serialize_account_detail,
     serialize_account_summary,
-    serialize_category_summary,
+    serialize_category_summaries,
     serialize_report,
 )
 from services.campaign_service import (
@@ -38,7 +38,7 @@ from services.campaign_service import (
     normalize_dashboard_review_sort,
     redirect_with_dashboard_flash,
     serialize_campaign_detail,
-    serialize_campaign_summary,
+    serialize_campaign_summaries,
 )
 from services.user_service import get_authenticated_user, pop_flash_message
 from services.user_service import should_redirect_direct_visit_to_home
@@ -90,11 +90,7 @@ def dashboard_page(
             status=selected_account_status,
         )
         serialized_accounts = [
-            serialize_account_summary(
-                account,
-                UserAccountController.GetAccountDetails(session, account.id)["last_login"],
-            )
-            for account in accounts
+            serialize_account_summary(account, account.last_login_at) for account in accounts
         ]
         selected_account_data = None
         if account_id is not None:
@@ -112,9 +108,7 @@ def dashboard_page(
             search_keywords=category_search_query,
             status=selected_category_status,
         )
-        serialized_categories = [
-            serialize_category_summary(session, category_record) for category_record in categories
-        ]
+        serialized_categories = serialize_category_summaries(session, categories)
         selected_category_data = None
         if category_id is not None:
             try:
@@ -176,8 +170,10 @@ def dashboard_page(
 
         flash_message = pop_flash_message(request)
         serialized_pending_campaigns = []
-        for campaign in pending_campaigns:
-            campaign_summary = serialize_campaign_summary(session, campaign)
+        for campaign, campaign_summary in zip(
+            pending_campaigns,
+            serialize_campaign_summaries(session, pending_campaigns),
+        ):
             campaign_summary["review_url"] = build_dashboard_url(
                 review_campaign_id=campaign.id,
                 selected_category=selected_category,

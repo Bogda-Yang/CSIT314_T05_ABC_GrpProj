@@ -548,6 +548,37 @@ def serialize_category_summary(session: Session, category: Category) -> dict[str
     }
 
 
+def serialize_category_summaries(
+    session: Session, categories: list[Category]
+) -> list[dict[str, object]]:
+    if not categories:
+        return []
+
+    category_values = [category.value for category in categories]
+    count_rows = session.execute(
+        select(FundraisingCampaign.category, func.count(FundraisingCampaign.id))
+        .where(
+            FundraisingCampaign.category.in_(category_values),
+            FundraisingCampaign.status != "deleted",
+        )
+        .group_by(FundraisingCampaign.category)
+    ).all()
+    count_lookup = {category_value: int(count or 0) for category_value, count in count_rows}
+
+    return [
+        {
+            "id": category.id,
+            "value": category.value,
+            "name": category.name,
+            "description": category.description,
+            "status": category.status,
+            "status_label": category.status.title(),
+            "campaign_count": count_lookup.get(category.value, 0),
+        }
+        for category in categories
+    ]
+
+
 def serialize_report(report) -> dict[str, object]:
     data = report.data
     period_start = data["period_start"]
