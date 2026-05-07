@@ -132,7 +132,20 @@ async function postJson(url, payload) {
     body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  let data = {};
+  let rawText = "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      data = await response.json();
+    } catch (error) {
+      rawText = "";
+    }
+  } else {
+    rawText = await response.text();
+  }
+
   if (!response.ok) {
     if (typeof data.detail === "string") {
       throw new Error(normalizeValidationMessage(data.detail));
@@ -149,7 +162,14 @@ async function postJson(url, payload) {
           .join("; ")
       );
     }
-    throw new Error(typeof data.message === "string" ? data.message : "Request failed.");
+    if (typeof data.message === "string") {
+      throw new Error(data.message);
+    }
+    throw new Error(
+      rawText && rawText !== "Internal Server Error"
+        ? rawText
+        : "Server error. Please try again later."
+    );
   }
 
   return data;

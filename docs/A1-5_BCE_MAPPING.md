@@ -23,7 +23,7 @@ Scope:
 
 | BCE Class | Method definitions |
 |---|---|
-| `AccountManagementPage` | `SelectUserAccount()` and `ViewAccountStatus()` are handled by `dashboard_page()` `routers/admin.py:51`; `ConfirmDeactivation()` and `DisplayDeactivationResult()` are handled by `deactivate_account()` `routers/admin.py:275` |
+| `AccountManagementPage` | `SelectUserAccount()` and `ViewAccountStatus()` are handled by `dashboard_page()` `routers/admin.py:51`; `ConfirmDeactivation()` and `DisplayDeactivationResult()` are handled by `deactivate_account()` `routers/admin.py:271` |
 | `AccountStatusController` | `GetAccountStatus()` `services/admin_service.py:240`, `DeactivateAccount()` `services/admin_service.py:247`, `UpdateAccountStatus()` `services/admin_service.py:263`, `ClearAccountSessions()` `services/admin_service.py:267` |
 | `UserAccount` | `GetAccountById()` `models/user.py:64`, `UpdateStatus()` `models/user.py:94` |
 | `AccountStatus` | `SetInactive()` `models/user.py:403`, `GetStatus()` `models/user.py:407` |
@@ -32,7 +32,7 @@ Scope:
 
 | BCE Class | Method definitions |
 |---|---|
-| `AccountManagementPage` | `SelectUserAccount()` and `ReviewAccountDetails()` are handled by `dashboard_page()` `routers/admin.py:51`; `ConfirmDeletion()` and `DisplayDeletionResult()` are handled by `delete_account()` `routers/admin.py:299` |
+| `AccountManagementPage` | `SelectUserAccount()` and `ReviewAccountDetails()` are handled by `dashboard_page()` `routers/admin.py:51`; `ConfirmDeletion()` and `DisplayDeletionResult()` are handled by `delete_account()` `routers/admin.py:295` |
 | `AccountRemovalController` | `GetAccountDetails()` `services/admin_service.py:286`, `DeleteAccount()` `services/admin_service.py:290`, `RemoveAccountRecord()` `services/admin_service.py:301` |
 | `UserAccount` | `GetAccountById()` `models/user.py:64`, `DeleteUser()` `models/user.py:102` |
 | `UserProfile` | `DeleteProfile()` `models/user.py:144` |
@@ -41,7 +41,7 @@ Scope:
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignReviewPage` | `dashboard_page()` `routers/admin.py:51`, `approve_campaign()` `routers/admin.py:455` |
+| `CampaignReviewPage` | `dashboard_page()` `routers/admin.py:51`, `approve_campaign()` `routers/admin.py:451` |
 | `CampaignApprovalController` | `ValidateSubmissionRequirements()` `services/campaign_service.py:931`, `SubmitCampaignForApproval()` `services/campaign_service.py:951`, `UpdateCampaignStatusToPending()` `services/campaign_service.py:963`, `RetrieveCampaignStatus()` `services/campaign_service.py:968`, `GetApprovalStatusDetails()` `services/campaign_service.py:975`, `GetPendingCampaigns()` `services/campaign_service.py:980`, `GetCampaignDetails()` `services/campaign_service.py:992`, `ValidateCampaign()` `services/campaign_service.py:996`, `ApproveCampaign()` `services/campaign_service.py:1004`, `PublishCampaign()` `services/campaign_service.py:1015` |
 | `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:67`, `GetPendingCampaigns()` `models/campaign.py:388`, `UpdateCampaignStatus()` `models/campaign.py:424`, `PublishCampaign()` `models/campaign.py:430` |
 | `CampaignStatus` | `SetApproved()` `models/campaign.py:671`, `SetPublished()` `models/campaign.py:677`, `GetStatus()` `models/campaign.py:683` |
@@ -50,7 +50,7 @@ Scope:
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignReviewPage` | `dashboard_page()` `routers/admin.py:51`, `reject_campaign()` `routers/admin.py:499` |
+| `CampaignReviewPage` | `dashboard_page()` `routers/admin.py:51`, `reject_campaign()` `routers/admin.py:495` |
 | `CampaignRejectionController` | `GetPendingCampaigns()` `services/campaign_service.py:1022`, `GetCampaignDetails()` `services/campaign_service.py:1034`, `ValidateCampaign()` `services/campaign_service.py:1038`, `RejectCampaign()` `services/campaign_service.py:1047`, `RecordRejectionReason()` `services/campaign_service.py:1067` |
 | `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:67`, `GetPendingCampaigns()` `models/campaign.py:388`, `UpdateCampaignStatus()` `models/campaign.py:424` |
 | `RejectionRecord` | `SaveRejectionReason()` `models/campaign.py:580`, `GetRejectionReason()` `models/campaign.py:590` |

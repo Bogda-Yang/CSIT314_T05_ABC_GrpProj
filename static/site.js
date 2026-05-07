@@ -90,7 +90,20 @@ async function postJson(url, payload) {
     body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  let data = {};
+  let rawText = "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      data = await response.json();
+    } catch (error) {
+      rawText = "";
+    }
+  } else {
+    rawText = await response.text();
+  }
+
   if (!response.ok) {
     let message = "Request failed.";
 
@@ -103,6 +116,10 @@ async function postJson(url, payload) {
         .join("; ");
     } else if (typeof data.message === "string") {
       message = data.message;
+    } else if (rawText && rawText !== "Internal Server Error") {
+      message = rawText;
+    } else if (rawText === "Internal Server Error") {
+      message = "Server error. Please try again later.";
     }
 
     throw new Error(message);

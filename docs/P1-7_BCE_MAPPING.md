@@ -20,7 +20,7 @@ Implementation note:
 
 | BCE Class | Method definitions |
 |---|---|
-| `CategoryManagementPage` | `AccessCategoryManagementPage()` is handled by `dashboard_page()` `routers/admin.py:51`; `EnterCategoryDetails()`, `SubmitCategoryCreation()`, and `DisplayCreationResult()` are handled by `create_category()` `routers/admin.py:323` |
+| `CategoryManagementPage` | `AccessCategoryManagementPage()` is handled by `dashboard_page()` `routers/admin.py:51`; `EnterCategoryDetails()`, `SubmitCategoryCreation()`, and `DisplayCreationResult()` are handled by `create_category()` `routers/admin.py:319` |
 | `CategoryController` | `ValidateCategoryInformation()` `services/admin_service.py:307`, `CreateCategory()` `services/admin_service.py:327`, `SaveCategory()` `services/admin_service.py:340` |
 | `Category` | `CreateCategory()` `models/admin.py:40`, `SaveCategory()` `models/admin.py:52`, `GetCategoryDetails()` `models/admin.py:56` |
 
@@ -28,7 +28,7 @@ Implementation note:
 
 | BCE Class | Method definitions |
 |---|---|
-| `CategoryManagementPage` | `AccessCategoryManagementPage()`, `SelectExistingCategory()`, `ViewCurrentCategoryDetails()`, and `EditCategoryDetails()` are handled by `dashboard_page()` `routers/admin.py:51`; `SubmitCategoryUpdate()` and `DisplayUpdateResult()` are handled by `update_category()` `routers/admin.py:351` |
+| `CategoryManagementPage` | `AccessCategoryManagementPage()`, `SelectExistingCategory()`, `ViewCurrentCategoryDetails()`, and `EditCategoryDetails()` are handled by `dashboard_page()` `routers/admin.py:51`; `SubmitCategoryUpdate()` and `DisplayUpdateResult()` are handled by `update_category()` `routers/admin.py:347` |
 | `CategoryController` | `GetCategoryDetails()` `services/admin_service.py:365`, `ValidateUpdatedInformation()` `services/admin_service.py:319`, `UpdateCategory()` `services/admin_service.py:374`, `SaveCategoryChanges()` `services/admin_service.py:394` |
 | `Category` | `GetCategoryById()` `models/admin.py:68`, `GetCategoryDetails()` `models/admin.py:56`, `UpdateCategory()` `models/admin.py:104`, `SaveCategoryChanges()` `models/admin.py:111` |
 
@@ -36,7 +36,7 @@ Implementation note:
 
 | BCE Class | Method definitions |
 |---|---|
-| `CategoryManagementPage` | `AccessCategoryManagementPage()`, `SelectCategory()`, and `ReviewCategoryDetails()` are handled by `dashboard_page()` `routers/admin.py:51`; `ConfirmCategoryDeletion()` and `DisplayDeletionResult()` are handled by `delete_category()` `routers/admin.py:381` |
+| `CategoryManagementPage` | `AccessCategoryManagementPage()`, `SelectCategory()`, and `ReviewCategoryDetails()` are handled by `dashboard_page()` `routers/admin.py:51`; `ConfirmCategoryDeletion()` and `DisplayDeletionResult()` are handled by `delete_category()` `routers/admin.py:377` |
 | `CategoryController` | `GetCategoryDetails()` `services/admin_service.py:365`, `DeleteCategory()` `services/admin_service.py:398`, `RemoveCategory()` `services/admin_service.py:409` |
 | `Category` | `GetCategoryById()` `models/admin.py:68`, `GetCategoryDetails()` `models/admin.py:56`, `DeleteCategory()` `models/admin.py:115` |
 
@@ -52,25 +52,25 @@ Implementation note:
 
 | BCE Class | Method definitions |
 |---|---|
-| `ReportManagementPage` | `AccessReportManagementPage()`, `SelectDailyReportType()`, `GenerateDailyReport()`, and `ViewDailyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportDailyReport()` is handled by `export_report()` `routers/admin.py:405` |
+| `ReportManagementPage` | `AccessReportManagementPage()`, `SelectDailyReportType()`, `GenerateDailyReport()`, and `ViewDailyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportDailyReport()` is handled by `export_report()` `routers/admin.py:401` |
 | `ReportController` | `CollectDailyActivityData()` `services/admin_service.py:427`, `GenerateDailyReport()` `services/admin_service.py:447`, `GetDailyReport()` `services/admin_service.py:469`, `ExportReport()` `services/admin_service.py:500` |
-| `PlatformActivity` | `GetDailyActivityData()` `models/admin.py:336` |
-| `DailyReport` | `GenerateReport()` `models/admin.py:421`, `GetReport()` `models/admin.py:425`, `ExportReport()` `models/admin.py:429` |
+| `PlatformActivity` | `GetDailyActivityData()` `models/admin.py:318` |
+| `DailyReport` | `GenerateReport()` `models/admin.py:403`, `GetReport()` `models/admin.py:407`, `ExportReport()` `models/admin.py:411` |
 
 ## P6 Generate Weekly Report
 
 | BCE Class | Method definitions |
 |---|---|
-| `ReportManagementPage` | `AccessReportManagementPage()`, `SelectWeeklyReportType()`, `GenerateWeeklyReport()`, and `ViewWeeklyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportWeeklyReport()` is handled by `export_report()` `routers/admin.py:405` |
+| `ReportManagementPage` | `AccessReportManagementPage()`, `SelectWeeklyReportType()`, `GenerateWeeklyReport()`, and `ViewWeeklyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportWeeklyReport()` is handled by `export_report()` `routers/admin.py:401` |
 | `ReportController` | `CollectWeeklyActivityData()` `services/admin_service.py:431`, `GenerateWeeklyReport()` `services/admin_service.py:451`, `GetWeeklyReport()` `services/admin_service.py:473`, `ExportReport()` `services/admin_service.py:500` |
-| `PlatformActivity` | `GetWeeklyActivityData()` `models/admin.py:345` |
-| `WeeklyReport` | `GenerateReport()` `models/admin.py:435`, `GetReport()` `models/admin.py:439`, `ExportReport()` `models/admin.py:443` |
+| `PlatformActivity` | `GetWeeklyActivityData()` `models/admin.py:327` |
+| `WeeklyReport` | `GenerateReport()` `models/admin.py:417`, `GetReport()` `models/admin.py:421`, `ExportReport()` `models/admin.py:425` |
 
 ## P7 Generate Monthly Report
 
 | BCE Class | Method definitions |
 |---|---|
-| `ReportManagementPage` | `AccessReportManagementPage()`, `SelectMonthlyReportType()`, `GenerateMonthlyReport()`, and `ViewMonthlyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportMonthlyReport()` is handled by `export_report()` `routers/admin.py:405` |
+| `ReportManagementPage` | `AccessReportManagementPage()`, `SelectMonthlyReportType()`, `GenerateMonthlyReport()`, and `ViewMonthlyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportMonthlyReport()` is handled by `export_report()` `routers/admin.py:401` |
 | `ReportController` | `CollectMonthlyPerformanceData()` `services/admin_service.py:441`, `GenerateMonthlyReport()` `services/admin_service.py:463`, `GetMonthlyReport()` `services/admin_service.py:483`, `ExportReport()` `services/admin_service.py:500` |
-| `PlatformActivity` | `GetMonthlyPerformanceData()` `models/admin.py:369` |
-| `MonthlyReport` | `GenerateReport()` `models/admin.py:449`, `GetReport()` `models/admin.py:453`, `ExportReport()` `models/admin.py:457` |
+| `PlatformActivity` | `GetMonthlyPerformanceData()` `models/admin.py:351` |
+| `MonthlyReport` | `GenerateReport()` `models/admin.py:431`, `GetReport()` `models/admin.py:435`, `ExportReport()` `models/admin.py:439` |

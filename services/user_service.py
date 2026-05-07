@@ -217,7 +217,7 @@ def send_email_code(receiver: str, code: str, purpose: str) -> None:
 
     if not smtp_user or not smtp_pass:
         raise HTTPException(
-            status_code=500,
+            status_code=503,
             detail="SMTP is not configured. Set SMTP_USER and SMTP_PASS first.",
         )
 
@@ -229,10 +229,16 @@ def send_email_code(receiver: str, code: str, purpose: str) -> None:
         f"Your FireflyFund {purpose} code is {code}. It expires in 10 minutes."
     )
 
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.send_message(message)
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(message)
+    except (OSError, smtplib.SMTPException) as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Email delivery is currently unavailable. Please try again later.",
+        ) from error
 
 
 def send_notification_email(receiver: str, subject: str, content: str) -> None:
@@ -243,7 +249,7 @@ def send_notification_email(receiver: str, subject: str, content: str) -> None:
 
     if not smtp_user or not smtp_pass:
         raise HTTPException(
-            status_code=500,
+            status_code=503,
             detail="SMTP is not configured. Set SMTP_USER and SMTP_PASS first.",
         )
 
@@ -253,10 +259,16 @@ def send_notification_email(receiver: str, subject: str, content: str) -> None:
     message["To"] = receiver
     message.set_content(content)
 
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.send_message(message)
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(message)
+    except (OSError, smtplib.SMTPException) as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Email delivery is currently unavailable. Please try again later.",
+        ) from error
 
 
 def get_admin_emails() -> set[str]:
