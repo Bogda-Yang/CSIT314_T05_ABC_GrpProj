@@ -126,8 +126,15 @@ def logout(request: Request) -> RedirectResponse:
 @router.post("/api/auth/send-code")
 def send_code(payload: SendCodePayload) -> JSONResponse:
     with get_session() as session:
-        AuthController.RequestVerificationCode(session, payload.email)
-    return JSONResponse({"message": "Verification code sent."})
+        demo_code = AuthController.RequestVerificationCode(session, payload.email)
+
+    response = {"message": "Verification code sent."}
+    if demo_code:
+        response = {
+            "message": f"Demo verification code: {demo_code}",
+            "code": demo_code,
+        }
+    return JSONResponse(response)
 
 
 @router.post("/api/auth/register")
@@ -158,8 +165,15 @@ def login(payload: LoginPayload, request: Request) -> JSONResponse:
 @router.post("/api/auth/send-reset-code")
 def send_reset_code(payload: SendCodePayload) -> JSONResponse:
     with get_session() as session:
-        ForgotPasswordController.RequestResetCode(session, payload.email)
-    return JSONResponse({"message": "Password reset code sent."})
+        demo_code = ForgotPasswordController.RequestResetCode(session, payload.email)
+
+    response = {"message": "Password reset code sent."}
+    if demo_code:
+        response = {
+            "message": f"Demo password reset code: {demo_code}",
+            "code": demo_code,
+        }
+    return JSONResponse(response)
 
 
 @router.post("/api/auth/verify-reset-code")

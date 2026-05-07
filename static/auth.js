@@ -292,8 +292,8 @@ async function handleSendCode() {
     }
 
     setMessage("Sending verification code...");
-    await postJson("/api/auth/send-code", { email });
-    setMessage("Verification code sent. Check your inbox.", "success");
+    const result = await postJson("/api/auth/send-code", { email });
+    setMessage(result.message || "Verification code sent. Check your inbox.", "success");
     startCooldown(sendCodeButton, 60);
   } catch (error) {
     setMessage(getErrorMessage(error), "error");
@@ -310,8 +310,8 @@ async function handleSendResetCode() {
     }
 
     setMessage("Sending password reset code...");
-    await postJson("/api/auth/send-reset-code", { email });
-    setMessage("Password reset code sent. Check your inbox.", "success");
+    const result = await postJson("/api/auth/send-reset-code", { email });
+    setMessage(result.message || "Password reset code sent. Check your inbox.", "success");
     startCooldown(sendResetCodeButton, 60);
   } catch (error) {
     setMessage(getErrorMessage(error), "error");

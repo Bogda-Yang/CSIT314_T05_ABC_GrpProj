@@ -42,6 +42,11 @@ from models.donation import DonationRecord, FavouriteCampaign
 
 DELETED_ACCOUNT_EMAIL = "deleted-account@fireflyfund.local"
 DELETED_ACCOUNT_USERNAME = "Deleted Account"
+EMAIL_DELIVERY_MODE_DEMO = "demo"
+
+
+def is_demo_email_delivery() -> bool:
+    return os.getenv("EMAIL_DELIVERY_MODE", "smtp").strip().lower() == EMAIL_DELIVERY_MODE_DEMO
 
 
 def request_validation_exception_handler(
@@ -210,6 +215,9 @@ def should_redirect_direct_visit_to_home(request: Request) -> bool:
 
 
 def send_email_code(receiver: str, code: str, purpose: str) -> None:
+    if is_demo_email_delivery():
+        return
+
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
     smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -504,12 +512,17 @@ class AuthController:
         return AuthController.ValidationVerificationCode(session, email, code)
 
     @staticmethod
-    def RequestVerificationCode(session: Session, email: str) -> None:
+    def RequestVerificationCode(session: Session, email: str) -> str | None:
         AuthController.CheckEmail(session, email)
         code = EmailVerification.GenerateCode()
         EmailVerification.StoreCode(session, email, code)
         session.commit()
+
+        if is_demo_email_delivery():
+            return code
+
         AuthController.SendVerificationEmail(email, code)
+        return None
 
     @staticmethod
     def ValidationVerificationCode(session: Session, email: str, code: str) -> VerificationCode:
@@ -890,7 +903,7 @@ class ForgotPasswordController:
         return clean_email, password
 
     @staticmethod
-    def RequestResetCode(session: Session, email: str) -> None:
+    def RequestResetCode(session: Session, email: str) -> str | None:
         user = UserAccount.GetUserByEmail(session, email)
         if not user:
             raise HTTPException(status_code=404, detail="No account found for this email.")
@@ -898,7 +911,12 @@ class ForgotPasswordController:
         code = PasswordResetVerification.GenerateCode()
         PasswordResetVerification.StoreCode(session, email, code)
         session.commit()
+
+        if is_demo_email_delivery():
+            return code
+
         send_email_code(email, code, "password reset")
+        return None
 
     @staticmethod
     def ValidationResetCode(session: Session, email: str, code: str) -> PasswordResetCode:
