@@ -378,7 +378,6 @@ if (teamModal) {
 // 打开公开筹款项目详情弹窗
 if (publicCampaignModal) {
   const currentUserEmail = (document.body.dataset.currentUserEmail || "").trim().toLowerCase();
-  const projectButtons = document.querySelectorAll(".public-campaign-open");
   const modalTitle = document.querySelector("#public-campaign-modal-title");
   const modalCategory = document.querySelector("#public-campaign-modal-category");
   const modalOwner = document.querySelector("#public-campaign-modal-owner");
@@ -406,10 +405,16 @@ if (publicCampaignModal) {
   );
   const projectsFlashMessage = document.querySelector(".projects-flash");
   const closeTriggers = publicCampaignModal.querySelectorAll("[data-close-project-modal='true']");
+  const projectsGrid = document.querySelector("#public-campaign-grid");
+  const projectsLoadMoreButton = document.querySelector("#projects-load-more");
+  const projectsLoadMorePanel = document.querySelector(".projects-load-more-panel");
+  const projectsLoadStatus = document.querySelector("#projects-load-status");
+  const projectsPublicBody = document.querySelector(".projects-public-body");
   let currentProjectImages = [];
   let currentProjectImageIndex = 0;
   let activeProjectButton = null;
   let supportConfirmationApproved = false;
+  let isLoadingProjects = false;
 
   const syncProjectModalQuery = (projectId = "") => {
     const currentUrl = new URL(window.location.href);
@@ -442,6 +447,84 @@ if (publicCampaignModal) {
     }
     if (modalNext) {
       modalNext.hidden = !showArrows;
+    }
+  };
+
+  const updateProjectsLoadState = (nextOffset, totalCount, hasMore) => {
+    if (projectsGrid) {
+      projectsGrid.dataset.nextOffset = String(nextOffset);
+      projectsGrid.dataset.totalCount = String(totalCount);
+    }
+    if (projectsLoadStatus) {
+      projectsLoadStatus.textContent = `Showing ${Math.min(nextOffset, totalCount)} of ${totalCount} campaigns.`;
+    }
+    if (projectsLoadMorePanel) {
+      projectsLoadMorePanel.hidden = !hasMore;
+    }
+    if (projectsLoadMoreButton) {
+      projectsLoadMoreButton.disabled = false;
+      projectsLoadMoreButton.textContent = "Load More";
+    }
+  };
+
+  const loadNextProjectsBatch = async () => {
+    if (!projectsGrid || isLoadingProjects) {
+      return;
+    }
+
+    const nextOffset = Number.parseInt(projectsGrid.dataset.nextOffset || "0", 10);
+    const pageSize = Number.parseInt(projectsGrid.dataset.pageSize || "20", 10);
+    const totalCount = Number.parseInt(projectsGrid.dataset.totalCount || "0", 10);
+    if (Number.isFinite(totalCount) && totalCount > 0 && nextOffset >= totalCount) {
+      updateProjectsLoadState(nextOffset, totalCount, false);
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set("offset", String(nextOffset));
+    params.set("limit", String(pageSize));
+    if (projectsGrid.dataset.category) {
+      params.set("category", projectsGrid.dataset.category);
+    }
+    if (projectsGrid.dataset.query) {
+      params.set("q", projectsGrid.dataset.query);
+    }
+    if (projectsGrid.dataset.sort) {
+      params.set("sort", projectsGrid.dataset.sort);
+    }
+
+    isLoadingProjects = true;
+    if (projectsLoadMoreButton) {
+      projectsLoadMoreButton.disabled = true;
+      projectsLoadMoreButton.textContent = "Loading...";
+    }
+
+    try {
+      const response = await fetch(`/api/projects?${params.toString()}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error("Unable to load more campaigns.");
+      }
+      const payload = await response.json();
+      if (payload.html) {
+        projectsGrid.insertAdjacentHTML("beforeend", payload.html);
+      }
+      updateProjectsLoadState(
+        Number(payload.next_offset || nextOffset),
+        Number(payload.total || totalCount),
+        Boolean(payload.has_more)
+      );
+    } catch (error) {
+      if (projectsLoadMoreButton) {
+        projectsLoadMoreButton.disabled = false;
+        projectsLoadMoreButton.textContent = "Try Again";
+      }
+      if (projectsLoadStatus) {
+        projectsLoadStatus.textContent = "Unable to load more campaigns. Please try again.";
+      }
+    } finally {
+      isLoadingProjects = false;
     }
   };
 
@@ -572,8 +655,26 @@ if (publicCampaignModal) {
     supportConfirmModal.setAttribute("hidden", "");
   };
 
-  projectButtons.forEach((button) => {
-    button.addEventListener("click", () => openProjectModal(button));
+  document.addEventListener("click", (event) => {
+    const clickedElement = event.target instanceof Element ? event.target : null;
+    const projectButton = clickedElement?.closest(".public-campaign-open");
+    if (!projectButton) {
+      return;
+    }
+    openProjectModal(projectButton);
+  });
+
+  projectsLoadMoreButton?.addEventListener("click", loadNextProjectsBatch);
+
+  projectsPublicBody?.addEventListener("scroll", () => {
+    if (!projectsLoadMorePanel || projectsLoadMorePanel.hidden || isLoadingProjects) {
+      return;
+    }
+    const distanceToBottom =
+      projectsPublicBody.scrollHeight - projectsPublicBody.scrollTop - projectsPublicBody.clientHeight;
+    if (distanceToBottom < 240) {
+      loadNextProjectsBatch();
+    }
   });
 
   closeTriggers.forEach((node) => {

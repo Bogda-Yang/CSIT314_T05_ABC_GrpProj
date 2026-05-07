@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import distinct, func, select
+from sqlalchemy import case, distinct, func, select
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 
@@ -22,6 +22,7 @@ from services.campaign_service import (
     normalize_donee_campaign_sort,
     serialize_campaign_detail,
     serialize_campaign_summary,
+    serialize_campaign_summaries,
 )
 
 
@@ -32,12 +33,16 @@ class CampaignSearchController:
         search_keywords: str,
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[FundraisingCampaign]:
         return CampaignSearchController.RetrieveMatchingCampaigns(
             session,
             search_keywords,
             category=category,
             sort_order=sort_order,
+            limit=limit,
+            offset=offset,
         )
 
     @staticmethod
@@ -46,12 +51,16 @@ class CampaignSearchController:
         search_keywords: str,
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[FundraisingCampaign]:
         return FundraisingCampaign.GetMatchingCampaigns(
             session,
             search_keywords,
             category=category,
             sort_order=sort_order,
+            limit=limit,
+            offset=offset,
         )
 
 
@@ -62,12 +71,16 @@ class CampaignFilterController:
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
         search_keywords: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[FundraisingCampaign]:
         return CampaignFilterController.RetrieveFilteredCampaigns(
             session,
             category=category,
             sort_order=sort_order,
             search_keywords=search_keywords,
+            limit=limit,
+            offset=offset,
         )
 
     @staticmethod
@@ -76,12 +89,16 @@ class CampaignFilterController:
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
         search_keywords: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[FundraisingCampaign]:
         return FundraisingCampaign.GetFilteredCampaigns(
             session,
             category=category,
             sort_order=sort_order,
             search_keywords=search_keywords,
+            limit=limit,
+            offset=offset,
         )
 
 
@@ -362,57 +379,69 @@ def calculate_average_time_to_first_donation(session: Session) -> float | None:
 
 
 def calculate_transparency_score(session: Session) -> int:
-    campaigns = list(
-        session.scalars(
-            select(FundraisingCampaign).where(FundraisingCampaign.status == "published")
+    rows = session.execute(
+        select(
+            FundraisingCampaign.goal_amount,
+            FundraisingCampaign.description,
+            FundraisingCampaign.deadline,
+            func.count(CampaignImage.id).label("image_count"),
         )
-    )
-    if not campaigns:
+        .outerjoin(CampaignImage, CampaignImage.campaign_id == FundraisingCampaign.id)
+        .where(FundraisingCampaign.status == "published")
+        .group_by(
+            FundraisingCampaign.id,
+            FundraisingCampaign.goal_amount,
+            FundraisingCampaign.description,
+            FundraisingCampaign.deadline,
+        )
+    ).all()
+    if not rows:
         return 0
 
     complete_count = 0
-    for campaign in campaigns:
-        image_count = int(
-            session.scalar(
-                select(func.count(CampaignImage.id)).where(
-                    CampaignImage.campaign_id == campaign.id
-                )
-            )
-            or 0
-        )
+    for goal_amount, description, deadline, image_count in rows:
         has_required_details = all(
             [
-                campaign.goal_amount and int(campaign.goal_amount) > 0,
-                (campaign.description or "").strip(),
-                (campaign.deadline or "").strip(),
-                image_count > 0,
+                goal_amount and int(goal_amount) > 0,
+                (description or "").strip(),
+                (deadline or "").strip(),
+                int(image_count or 0) > 0,
             ]
         )
         if has_required_details:
             complete_count += 1
 
-    return round((complete_count / len(campaigns)) * 100)
+    return round((complete_count / len(rows)) * 100)
 
 
 def build_home_impact_overview(session: Session) -> dict[str, object]:
-    total_support = int(
-        session.scalar(select(func.coalesce(func.sum(DonationRecord.amount), 0))) or 0
-    )
     year_start = now_dt().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-    supported_campaigns_this_year = int(
-        session.scalar(
-            select(func.count(distinct(DonationRecord.campaign_id))).where(
-                DonationRecord.donated_at >= year_start
-            )
+    (
+        total_support,
+        donation_count,
+        donor_count,
+        supported_campaigns_this_year,
+    ) = session.execute(
+        select(
+            func.coalesce(func.sum(DonationRecord.amount), 0),
+            func.count(DonationRecord.id),
+            func.count(distinct(DonationRecord.user_id)),
+            func.count(
+                distinct(
+                    case(
+                        (
+                            DonationRecord.donated_at >= year_start,
+                            DonationRecord.campaign_id,
+                        )
+                    )
+                )
+            ),
         )
-        or 0
-    )
-    donation_count = int(
-        session.scalar(select(func.count(DonationRecord.id))) or 0
-    )
-    donor_count = int(
-        session.scalar(select(func.count(distinct(DonationRecord.user_id)))) or 0
-    )
+    ).one()
+    total_support = int(total_support or 0)
+    donation_count = int(donation_count or 0)
+    donor_count = int(donor_count or 0)
+    supported_campaigns_this_year = int(supported_campaigns_this_year or 0)
     average_first_donation_hours = calculate_average_time_to_first_donation(session)
     transparency_score = calculate_transparency_score(session)
 
@@ -844,17 +873,12 @@ def get_supported_campaign_summaries(
     session: Session, user_id: int
 ) -> list[dict[str, object]]:
     supported_campaigns = DonationRecord.GetSupportedCampaigns(session, user_id)
-    serialized_campaigns: list[dict[str, object]] = []
-    for campaign in supported_campaigns:
-        campaign_summary = serialize_campaign_summary(session, campaign)
+    serialized_campaigns = serialize_campaign_summaries(session, supported_campaigns)
+    for campaign, campaign_summary in zip(supported_campaigns, serialized_campaigns):
         campaign_summary["detail_url"] = build_projects_url(
             campaign_id=campaign.id,
             anchor="published-projects",
         )
-        campaign_summary["progress"] = CampaignProgressController.GetCampaignProgress(
-            session, campaign.id
-        )
-        serialized_campaigns.append(campaign_summary)
     return serialized_campaigns
 
 
@@ -864,6 +888,8 @@ def get_published_campaign_summaries(
     search_query: str,
     selected_sort: str,
     favourite_campaign_ids: set[int] | None = None,
+    limit: int | None = None,
+    offset: int = 0,
 ) -> list[dict[str, object]]:
     clean_search_query = search_query.strip()
     favourite_campaign_ids = favourite_campaign_ids or set()
@@ -874,23 +900,34 @@ def get_published_campaign_summaries(
             clean_search_query,
             category=selected_category,
             sort_order=selected_sort,
+            limit=limit,
+            offset=offset,
         )
     else:
         campaigns = CampaignFilterController.FilterCampaigns(
             session,
             category=selected_category,
             sort_order=selected_sort,
+            limit=limit,
+            offset=offset,
         )
 
-    serialized_campaigns: list[dict[str, object]] = []
-    for campaign in campaigns:
-        campaign_summary = serialize_campaign_summary(session, campaign)
-        campaign_summary["is_favourite"] = campaign.id in favourite_campaign_ids
-        campaign_summary["progress"] = CampaignProgressController.GetCampaignProgress(
-            session, campaign.id
-        )
-        serialized_campaigns.append(campaign_summary)
+    serialized_campaigns = serialize_campaign_summaries(session, campaigns)
+    for campaign_summary in serialized_campaigns:
+        campaign_summary["is_favourite"] = campaign_summary["id"] in favourite_campaign_ids
     return serialized_campaigns
+
+
+def get_published_campaign_count(
+    session: Session,
+    selected_category: str | None,
+    search_query: str,
+) -> int:
+    return FundraisingCampaign.CountDoneeCampaigns(
+        session,
+        category=selected_category,
+        search_keywords=search_query,
+    )
 
 
 def get_selected_category_label(selected_category: str | None) -> str:
@@ -912,8 +949,9 @@ def get_results_summary(
     published_campaigns: list[dict[str, object]],
     selected_category: str | None,
     search_query: str,
+    total_count: int | None = None,
 ) -> str:
-    count = len(published_campaigns)
+    count = len(published_campaigns) if total_count is None else total_count
     campaign_label = "campaign" if count == 1 else "campaigns"
     selected_category_label = humanize_campaign_category(selected_category).lower()
     if search_query.strip() and selected_category:

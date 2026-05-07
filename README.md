@@ -99,7 +99,7 @@ Required for email verification and password reset:
 - `SMTP_HOST`
 - `SMTP_PORT`
 
-Required for Render/Supabase deployment:
+Required for local and Render Supabase deployment:
 
 - `DATABASE_URL`
 - `SUPABASE_URL`
@@ -107,20 +107,27 @@ Required for Render/Supabase deployment:
 
 Optional values:
 
+- `RUN_DB_MIGRATIONS` set to `true` only when you intentionally need to create
+  tables, add missing columns, or create indexes on Supabase.
+- `VERIFY_STORAGE_BUCKETS` set to `true` only when you intentionally want startup
+  to verify or create Supabase Storage buckets.
+- `RUN_STARTUP_SEED` set to `true` only when you intentionally need to create the
+  default admin account, default categories, or simulated featured campaigns.
+- `WARM_DATABASE_POOL` defaults to `true` and opens one Supabase database
+  connection in the background after startup, reducing the first page request
+  delay without blocking the app from starting.
 - `SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_AVATAR_BUCKET`
 - `SUPABASE_CAMPAIGN_BUCKET`
 
-Example local database value:
-
-```env
-DATABASE_URL=sqlite:///./fireflyfund_local.db
-```
-
-Example Supabase connection string for Render:
+Example Supabase connection string used by both local runs and Render:
 
 ```env
 DATABASE_URL=postgresql+psycopg2://postgres.your-project-ref:your-password@aws-0-region.pooler.supabase.com:6543/postgres
+RUN_DB_MIGRATIONS=false
+VERIFY_STORAGE_BUCKETS=false
+RUN_STARTUP_SEED=false
+WARM_DATABASE_POOL=true
 ```
 
 ## Run Locally
@@ -150,6 +157,8 @@ Open:
 ## Authentication Notes
 
 - The app loads `.env` automatically.
+- Local runs and Render both use the same Supabase PostgreSQL database through
+  `DATABASE_URL`; SQLite is only used as a CI compile fallback.
 - User login state is backed by `user_sessions` and `authentication_tokens`.
 - On project startup, server-side sessions are cleared, so users must log in again after a restart.
 - Gmail SMTP should use an app password instead of the mailbox login password.
@@ -158,9 +167,8 @@ Open:
 
 - `Save Profile` updates username and profile information in one BCE-aligned flow.
 - Avatar and campaign image uploads use Supabase Storage when `SUPABASE_URL` and
-  `SUPABASE_SERVICE_ROLE_KEY` are configured.
-- Local `uploads/` directories remain as a development fallback when Supabase
-  Storage credentials are not configured.
+  `SUPABASE_SERVICE_ROLE_KEY` are configured. Use the same credentials locally
+  and on Render so uploaded media is shared across both environments.
 
 ## Render Notes
 

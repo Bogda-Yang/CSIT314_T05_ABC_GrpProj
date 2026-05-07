@@ -46,6 +46,7 @@ PROJECTS_PRIMARY_CATEGORY_FILTER_VALUES = (
     "emergencies",
     "other",
 )
+PROJECTS_PAGE_SIZE = 20
 
 DEFAULT_DASHBOARD_REVIEW_SORT = "time_asc"
 DASHBOARD_REVIEW_SORT_OPTIONS = (
@@ -95,19 +96,45 @@ DONATION_DATE_PERIOD_OPTIONS = (
 )
 DONATION_DATE_PERIOD_LABELS = dict(DONATION_DATE_PERIOD_OPTIONS)
 
-IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
-ONLINE_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-LOCAL_DATABASE_URL = os.getenv(
-    "LOCAL_DATABASE_URL",
-    f"sqlite:///{BASE_DIR / 'fireflyfund_local.db'}",
-).strip()
-DATABASE_URL = ONLINE_DATABASE_URL if IS_RENDER else LOCAL_DATABASE_URL
+IS_CI = os.getenv("GITHUB_ACTIONS", "").strip().lower() == "true"
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+RUN_DB_MIGRATIONS = os.getenv("RUN_DB_MIGRATIONS", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+VERIFY_STORAGE_BUCKETS = os.getenv("VERIFY_STORAGE_BUCKETS", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+RUN_STARTUP_SEED = os.getenv("RUN_STARTUP_SEED", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+WARM_DATABASE_POOL = os.getenv("WARM_DATABASE_POOL", "true").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
 
-if IS_RENDER and not ONLINE_DATABASE_URL:
+if not DATABASE_URL and IS_CI:
+    DATABASE_URL = "sqlite:///:memory:"
+
+if not DATABASE_URL:
     raise RuntimeError(
-        "DATABASE_URL is required on Render. Configure a Supabase Postgres connection string."
+        "DATABASE_URL is required for local and Render runs. Configure the Supabase Postgres connection string."
     )
 
+if DATABASE_URL.startswith("sqlite") and not IS_CI:
+    raise RuntimeError(
+        "SQLite is disabled for application runs. Set DATABASE_URL to the Supabase Postgres connection string."
+    )
 
 def infer_supabase_url(database_url: str) -> str:
     project_match = re.search(r"postgres\.([a-z0-9]+):", database_url, re.IGNORECASE)
@@ -117,7 +144,7 @@ def infer_supabase_url(database_url: str) -> str:
 
 
 SUPABASE_URL = (
-    os.getenv("SUPABASE_URL", "").strip().rstrip("/") or infer_supabase_url(ONLINE_DATABASE_URL)
+    os.getenv("SUPABASE_URL", "").strip().rstrip("/") or infer_supabase_url(DATABASE_URL)
 )
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 SUPABASE_AVATAR_BUCKET = (
@@ -126,7 +153,7 @@ SUPABASE_AVATAR_BUCKET = (
 SUPABASE_CAMPAIGN_BUCKET = (
     os.getenv("SUPABASE_CAMPAIGN_BUCKET", "campaign-images").strip() or "campaign-images"
 )
-SUPABASE_STORAGE_ENABLED = IS_RENDER and bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+SUPABASE_STORAGE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 LOCAL_CAMPAIGN_DATASET_XLSX = Path(
     os.getenv(
         "LOCAL_CAMPAIGN_DATASET_XLSX",

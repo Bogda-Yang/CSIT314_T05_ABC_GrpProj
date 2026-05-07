@@ -85,12 +85,16 @@ class FundraisingCampaign(Base):
 
     @staticmethod
     def GetPublishedCampaigns(
-        session: Session, category: str | None = None
+        session: Session,
+        category: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list["FundraisingCampaign"]:
         statement = FundraisingCampaign._build_donee_campaigns_statement(
             category=category,
             sort_order=DEFAULT_DONEE_CAMPAIGN_SORT,
         )
+        statement = FundraisingCampaign._apply_pagination(statement, limit, offset)
         return list(session.scalars(statement))
 
     @staticmethod
@@ -99,12 +103,16 @@ class FundraisingCampaign(Base):
         search_keywords: str,
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list["FundraisingCampaign"]:
         return FundraisingCampaign.GetMatchingCampaigns(
             session,
             search_keywords,
             category=category,
             sort_order=sort_order,
+            limit=limit,
+            offset=offset,
         )
 
     @staticmethod
@@ -113,6 +121,8 @@ class FundraisingCampaign(Base):
         search_keywords: str,
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list["FundraisingCampaign"]:
         clean_keywords = (search_keywords or "").strip().lower()
         statement = FundraisingCampaign._build_donee_campaigns_statement(
@@ -128,6 +138,7 @@ class FundraisingCampaign(Base):
                     func.lower(FundraisingCampaign.category).like(search_pattern),
                 )
             )
+        statement = FundraisingCampaign._apply_pagination(statement, limit, offset)
         return list(session.scalars(statement))
 
     @staticmethod
@@ -136,12 +147,16 @@ class FundraisingCampaign(Base):
         category: str | None = None,
         sort_order: str = DEFAULT_DONEE_CAMPAIGN_SORT,
         search_keywords: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list["FundraisingCampaign"]:
         return FundraisingCampaign.GetFilteredCampaigns(
             session,
             category=category,
             sort_order=sort_order,
             search_keywords=search_keywords,
+            limit=limit,
+            offset=offset,
         )
 
     @staticmethod
@@ -152,6 +167,8 @@ class FundraisingCampaign(Base):
         search_keywords: str | None = None,
         owner_id: int | None = None,
         lifecycle: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list["FundraisingCampaign"]:
         if owner_id is not None:
             campaigns = FundraisingCampaign.GetCampaignsByOwner(session, owner_id)
@@ -188,7 +205,32 @@ class FundraisingCampaign(Base):
                     func.lower(FundraisingCampaign.category).like(search_pattern),
                 )
             )
+        statement = FundraisingCampaign._apply_pagination(statement, limit, offset)
         return list(session.scalars(statement))
+
+    @staticmethod
+    def CountDoneeCampaigns(
+        session: Session,
+        category: str | None = None,
+        search_keywords: str | None = None,
+    ) -> int:
+        statement = select(func.count(FundraisingCampaign.id)).where(
+            FundraisingCampaign.status == "published"
+        )
+        if category:
+            statement = statement.where(FundraisingCampaign.category == category)
+
+        clean_keywords = (search_keywords or "").strip().lower()
+        if clean_keywords:
+            search_pattern = f"%{clean_keywords}%"
+            statement = statement.where(
+                or_(
+                    func.lower(FundraisingCampaign.title).like(search_pattern),
+                    func.lower(FundraisingCampaign.description).like(search_pattern),
+                    func.lower(FundraisingCampaign.category).like(search_pattern),
+                )
+            )
+        return int(session.scalar(statement) or 0)
 
     @staticmethod
     def RegisterCampaignView(campaign: "FundraisingCampaign") -> None:
@@ -327,6 +369,14 @@ class FundraisingCampaign(Base):
                 FundraisingCampaign.updated_at.desc(),
                 FundraisingCampaign.created_at.desc(),
             )
+        return statement
+
+    @staticmethod
+    def _apply_pagination(statement, limit: int | None = None, offset: int = 0):
+        if offset and offset > 0:
+            statement = statement.offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
         return statement
 
     @staticmethod

@@ -2202,6 +2202,27 @@ section {
   gap: 20px;
 }
 
+.projects-load-more-panel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 16px 0 4px;
+}
+
+.projects-load-more-panel[hidden] {
+  display: none;
+}
+
+.projects-load-more-panel .ghost-button {
+  min-width: 180px;
+}
+
+.projects-load-more-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .public-campaign-card {
   padding: 0;
   overflow: hidden;
@@ -3029,6 +3050,24 @@ section {
 
 .admin-report-grid {
   margin: 18px 0;
+}
+
+.admin-report-trend {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+
+.admin-report-trend h3 {
+  margin: 0;
+  color: var(--brand-deep);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-report-trend-table {
+  min-width: 620px;
 }
 
 .admin-detail-modal-panel {

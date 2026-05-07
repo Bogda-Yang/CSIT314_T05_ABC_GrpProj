@@ -4,6 +4,7 @@ from datetime import datetime
 
 from fastapi import HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from core.config import (
@@ -87,6 +88,7 @@ SIMULATED_FEATURED_CAMPAIGNS = (
 
 def ensure_simulated_featured_campaigns(session: Session) -> None:
     simulated_user = UserAccount.GetUserByEmail(session, SIMULATED_FUNDRAISER_EMAIL)
+    has_changes = False
     if not simulated_user:
         simulated_user = UserAccount.CreateUser(
             "Simulated User 1",
@@ -95,10 +97,10 @@ def ensure_simulated_featured_campaigns(session: Session) -> None:
         )
         UserAccount.SaveUser(session, simulated_user)
         session.flush()
+        has_changes = True
 
     existing_campaigns = FundraisingCampaign.GetCampaignsByOwner(session, simulated_user.id)
     existing_by_title = {campaign.title: campaign for campaign in existing_campaigns}
-    has_changes = False
 
     for campaign_data in SIMULATED_FEATURED_CAMPAIGNS:
         campaign = existing_by_title.get(campaign_data["title"])
@@ -122,17 +124,28 @@ def ensure_simulated_featured_campaigns(session: Session) -> None:
             session.flush()
             has_changes = True
         else:
-            campaign.category = campaign_data["category"]
-            campaign.goal_amount = campaign_data["goal_amount"]
-            campaign.description = campaign_data["description"]
-            campaign.deadline = "2026-09-04"
-            campaign.workflow_stage = max(campaign.workflow_stage or 0, 5)
-            campaign.status = "published"
+            campaign_changed = False
+            desired_values = {
+                "category": campaign_data["category"],
+                "goal_amount": campaign_data["goal_amount"],
+                "description": campaign_data["description"],
+                "deadline": "2026-09-04",
+                "status": "published",
+            }
+            for field_name, desired_value in desired_values.items():
+                if getattr(campaign, field_name) != desired_value:
+                    setattr(campaign, field_name, desired_value)
+                    campaign_changed = True
+            if (campaign.workflow_stage or 0) < 5:
+                campaign.workflow_stage = 5
+                campaign_changed = True
             if campaign.published_at is None:
                 campaign.published_at = now_dt()
-            campaign.updated_at = now_dt()
-            session.add(campaign)
-            has_changes = True
+                campaign_changed = True
+            if campaign_changed:
+                campaign.updated_at = now_dt()
+                session.add(campaign)
+                has_changes = True
 
         asset_path = f"asset:{campaign_data['asset']}"
         image_records = CampaignImage.GetImageDetails(session, campaign.id)
@@ -406,13 +419,66 @@ def serialize_campaign_summary(
 ) -> dict[str, object]:
     owner_account = UserAccount.GetUserAccount(session, campaign.owner_id)
     image_records = CampaignImage.GetImageDetails(session, campaign.id)
-    progress_data = CampaignProgress.GetFundingStatusDetails(session, campaign.id)
     shortlist_count = CampaignAnalytics.GetShortlistCount(session, campaign.id)
-    image_urls = [
-        build_campaign_image_url(record.image_path)
-        for record in image_records
-        if build_campaign_image_url(record.image_path)
+    return build_campaign_summary_payload(
+        campaign,
+        owner_account,
+        image_records,
+        shortlist_count,
+    )
+
+
+def serialize_campaign_summaries(
+    session: Session, campaigns: list[FundraisingCampaign]
+) -> list[dict[str, object]]:
+    if not campaigns:
+        return []
+
+    owner_ids = {campaign.owner_id for campaign in campaigns}
+    campaign_ids = [campaign.id for campaign in campaigns]
+
+    owner_lookup = {
+        user.id: user
+        for user in session.scalars(select(UserAccount).where(UserAccount.id.in_(owner_ids)))
+    }
+
+    image_lookup: dict[int, list[CampaignImage]] = {campaign_id: [] for campaign_id in campaign_ids}
+    image_statement = (
+        select(CampaignImage)
+        .where(CampaignImage.campaign_id.in_(campaign_ids))
+        .order_by(CampaignImage.campaign_id.asc(), CampaignImage.created_at.asc(), CampaignImage.id.asc())
+    )
+    for image_record in session.scalars(image_statement):
+        image_lookup.setdefault(image_record.campaign_id, []).append(image_record)
+
+    shortlist_statement = (
+        select(FavouriteCampaign.campaign_id, func.count(FavouriteCampaign.id))
+        .where(FavouriteCampaign.campaign_id.in_(campaign_ids))
+        .group_by(FavouriteCampaign.campaign_id)
+    )
+    shortlist_lookup = {
+        campaign_id: int(count or 0)
+        for campaign_id, count in session.execute(shortlist_statement).all()
+    }
+
+    return [
+        build_campaign_summary_payload(
+            campaign,
+            owner_lookup.get(campaign.owner_id),
+            image_lookup.get(campaign.id, []),
+            shortlist_lookup.get(campaign.id, 0),
+        )
+        for campaign in campaigns
     ]
+
+
+def build_campaign_summary_payload(
+    campaign: FundraisingCampaign,
+    owner_account: UserAccount | None,
+    image_records: list[CampaignImage],
+    shortlist_count: int,
+) -> dict[str, object]:
+    image_urls = build_campaign_image_urls(image_records)
     first_image_url = image_urls[0] if image_urls else None
     return {
         "id": campaign.id,
@@ -444,7 +510,51 @@ def serialize_campaign_summary(
         "image_count": len(image_records),
         "cover_image_url": first_image_url,
         "image_urls": image_urls,
-        "progress": progress_data,
+        "progress": build_campaign_progress_payload(campaign),
+    }
+
+
+def build_campaign_image_urls(image_records: list[CampaignImage]) -> list[str]:
+    image_urls: list[str] = []
+    for record in image_records:
+        image_url = build_campaign_image_url(record.image_path)
+        if image_url:
+            image_urls.append(image_url)
+    return image_urls
+
+
+def build_campaign_progress_payload(campaign: FundraisingCampaign) -> dict[str, object]:
+    goal_amount = int(campaign.goal_amount or 0)
+    amount_raised = int(campaign.amount_raised or 0)
+    progress_percentage = (
+        min(100, round((amount_raised / goal_amount) * 100)) if goal_amount > 0 else 0
+    )
+    remaining_amount = max(goal_amount - amount_raised, 0) if goal_amount > 0 else None
+
+    deadline_status = "No deadline"
+    if campaign.deadline:
+        try:
+            deadline_passed = datetime.strptime(campaign.deadline, "%Y-%m-%d").date() < now_dt().date()
+            deadline_status = "Ended" if deadline_passed else f"Runs until {campaign.deadline}"
+        except ValueError:
+            deadline_status = "Deadline unavailable"
+
+    goal_reached = bool(campaign.goal_amount and campaign.amount_raised >= campaign.goal_amount)
+    if goal_reached:
+        funding_status = "Goal reached"
+    elif campaign.status == "published":
+        funding_status = "Funding in progress"
+    else:
+        funding_status = campaign.status.title()
+
+    return {
+        "amount_raised": amount_raised,
+        "goal_amount": campaign.goal_amount,
+        "progress_percentage": progress_percentage,
+        "remaining_amount": remaining_amount,
+        "funding_status": funding_status,
+        "is_completed": FundraisingCampaign.IsCompleted(campaign),
+        "deadline_status": deadline_status,
     }
 
 

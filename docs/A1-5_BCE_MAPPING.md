@@ -42,15 +42,15 @@ Scope:
 | BCE Class | Method definitions |
 |---|---|
 | `CampaignReviewPage` | `dashboard_page()` `routers/admin.py:51`, `approve_campaign()` `routers/admin.py:455` |
-| `CampaignApprovalController` | `ValidateSubmissionRequirements()` `services/campaign_service.py:821`, `SubmitCampaignForApproval()` `services/campaign_service.py:841`, `UpdateCampaignStatusToPending()` `services/campaign_service.py:853`, `RetrieveCampaignStatus()` `services/campaign_service.py:858`, `GetApprovalStatusDetails()` `services/campaign_service.py:865`, `GetPendingCampaigns()` `services/campaign_service.py:870`, `GetCampaignDetails()` `services/campaign_service.py:882`, `ValidateCampaign()` `services/campaign_service.py:886`, `ApproveCampaign()` `services/campaign_service.py:894`, `PublishCampaign()` `services/campaign_service.py:905` |
-| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:67`, `GetPendingCampaigns()` `models/campaign.py:338`, `UpdateCampaignStatus()` `models/campaign.py:374`, `PublishCampaign()` `models/campaign.py:380` |
-| `CampaignStatus` | `SetApproved()` `models/campaign.py:621`, `SetPublished()` `models/campaign.py:627`, `GetStatus()` `models/campaign.py:633` |
+| `CampaignApprovalController` | `ValidateSubmissionRequirements()` `services/campaign_service.py:931`, `SubmitCampaignForApproval()` `services/campaign_service.py:951`, `UpdateCampaignStatusToPending()` `services/campaign_service.py:963`, `RetrieveCampaignStatus()` `services/campaign_service.py:968`, `GetApprovalStatusDetails()` `services/campaign_service.py:975`, `GetPendingCampaigns()` `services/campaign_service.py:980`, `GetCampaignDetails()` `services/campaign_service.py:992`, `ValidateCampaign()` `services/campaign_service.py:996`, `ApproveCampaign()` `services/campaign_service.py:1004`, `PublishCampaign()` `services/campaign_service.py:1015` |
+| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:67`, `GetPendingCampaigns()` `models/campaign.py:388`, `UpdateCampaignStatus()` `models/campaign.py:424`, `PublishCampaign()` `models/campaign.py:430` |
+| `CampaignStatus` | `SetApproved()` `models/campaign.py:671`, `SetPublished()` `models/campaign.py:677`, `GetStatus()` `models/campaign.py:683` |
 
 ## A5 Reject Fundraising Campaign
 
 | BCE Class | Method definitions |
 |---|---|
 | `CampaignReviewPage` | `dashboard_page()` `routers/admin.py:51`, `reject_campaign()` `routers/admin.py:499` |
-| `CampaignRejectionController` | `GetPendingCampaigns()` `services/campaign_service.py:912`, `GetCampaignDetails()` `services/campaign_service.py:924`, `ValidateCampaign()` `services/campaign_service.py:928`, `RejectCampaign()` `services/campaign_service.py:937`, `RecordRejectionReason()` `services/campaign_service.py:957` |
-| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:67`, `GetPendingCampaigns()` `models/campaign.py:338`, `UpdateCampaignStatus()` `models/campaign.py:374` |
-| `RejectionRecord` | `SaveRejectionReason()` `models/campaign.py:530`, `GetRejectionReason()` `models/campaign.py:540` |
+| `CampaignRejectionController` | `GetPendingCampaigns()` `services/campaign_service.py:1022`, `GetCampaignDetails()` `services/campaign_service.py:1034`, `ValidateCampaign()` `services/campaign_service.py:1038`, `RejectCampaign()` `services/campaign_service.py:1047`, `RecordRejectionReason()` `services/campaign_service.py:1067` |
+| `FundraisingCampaign` | `GetCampaignDetails()` `models/campaign.py:67`, `GetPendingCampaigns()` `models/campaign.py:388`, `UpdateCampaignStatus()` `models/campaign.py:424` |
+| `RejectionRecord` | `SaveRejectionReason()` `models/campaign.py:580`, `GetRejectionReason()` `models/campaign.py:590` |

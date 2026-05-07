@@ -191,8 +191,8 @@ def get_report_month_options(selected_month: date) -> list[dict[str, str | bool]
 
 
 def ensure_default_categories(session: Session) -> None:
-    Category.SeedDefaultCategories(session)
-    session.commit()
+    if Category.SeedDefaultCategories(session):
+        session.commit()
 
 
 class UserAccountController:
@@ -559,21 +559,87 @@ def serialize_report(report) -> dict[str, object]:
         )
     else:
         period_label = format_report_period_label(report.report_type, period_start.date())
+
+    def money(value: object) -> str:
+        return f"${int(float(value or 0)):,}"
+
+    def category_summary(category_data: dict[str, object]) -> str:
+        category = str(category_data.get("category") or "N/A")
+        if category == "N/A":
+            return "N/A"
+        return (
+            f"{humanize_campaign_category(category)} "
+            f"({money(category_data.get('donation_amount'))})"
+        )
+
+    def campaign_summary(campaign_data: dict[str, object], value_key: str) -> str:
+        title = str(campaign_data.get("title") or "N/A")
+        if title == "N/A":
+            return "N/A"
+        value = campaign_data.get(value_key)
+        if value_key == "donation_amount":
+            return f"{title} ({money(value)})"
+        return f"{title} ({int(value or 0):,} views)"
+
+    if report.report_type == "weekly":
+        trend_rows = [
+            {
+                "label": row["label"],
+                "donations_count": row["donations_count"],
+                "donation_amount": money(row["donation_amount"]),
+                "views_count": row["views_count"],
+                "users_created": row["users_created"],
+            }
+            for row in data.get("daily_trend_rows", [])
+        ]
+        metrics = [
+            ("Total Donations This Week", data["donations_count"]),
+            ("Total Donation Amount This Week", money(data["donation_amount"])),
+            ("Campaign Views This Week", data["views_count"]),
+            ("New Users This Week", data["users_created"]),
+            ("Best Performing Category", category_summary(data["best_performing_category"])),
+            (
+                "Most Viewed Campaign",
+                campaign_summary(data["most_viewed_campaign"], "views_count"),
+            ),
+        ]
+    elif report.report_type == "monthly":
+        trend_rows = []
+        metrics = [
+            ("Total Monthly Donation Amount", money(data["donation_amount"])),
+            ("Total Monthly Donations", data["donations_count"]),
+            ("Published Campaigns", data["campaigns_published"]),
+            ("Average Donation Amount", money(data["average_donation_amount"])),
+            ("Top Category by Donation Amount", category_summary(data["top_category_by_donation"])),
+            (
+                "Top Campaign by Donation Amount",
+                campaign_summary(data["top_campaign_by_donation"], "donation_amount"),
+            ),
+            ("Campaign Success Rate", f"{float(data['campaign_success_rate']):.1f}%"),
+            ("User Growth", data["user_growth"]),
+            ("Donor Participation", data["donor_participation"]),
+            ("Supported Campaigns", data["supported_campaigns"]),
+        ]
+    else:
+        trend_rows = []
+        metrics = [
+            ("Users Created", data["users_created"]),
+            ("Campaigns Created", data["campaigns_created"]),
+            ("Campaigns Published", data["campaigns_published"]),
+            ("Donation Count", data["donations_count"]),
+            ("Donation Amount", money(data["donation_amount"])),
+            ("Favourites Added", data["favourites_count"]),
+            ("Campaign Views", data["views_count"]),
+        ]
+
     return {
         "type": report.report_type,
         "title": report.title,
         "period_label": period_label,
         "period_start": period_start.strftime("%Y-%m-%d %H:%M"),
         "period_end": period_end.strftime("%Y-%m-%d %H:%M"),
-        "metrics": [
-            ("Users Created", data["users_created"]),
-            ("Campaigns Created", data["campaigns_created"]),
-            ("Campaigns Published", data["campaigns_published"]),
-            ("Donation Count", data["donations_count"]),
-            ("Donation Amount", f"${int(data['donation_amount']):,}"),
-            ("Favourites Added", data["favourites_count"]),
-            ("Campaign Views", data["views_count"]),
-        ],
+        "metrics": metrics,
+        "trend_rows": trend_rows,
     }
 
 

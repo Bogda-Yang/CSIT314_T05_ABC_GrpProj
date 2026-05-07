@@ -116,8 +116,9 @@ class Category(Base):
         session.delete(category)
 
     @staticmethod
-    def SeedDefaultCategories(session: Session) -> None:
+    def SeedDefaultCategories(session: Session) -> bool:
         existing_values = set(session.scalars(select(Category.value)))
+        has_changes = False
         for value, name in CAMPAIGN_CATEGORY_OPTIONS:
             if value in existing_values:
                 continue
@@ -132,6 +133,8 @@ class Category(Base):
                     updated_at=now_dt(),
                 ),
             )
+            has_changes = True
+        return has_changes
 
 
 class PlatformActivity:
@@ -217,6 +220,119 @@ class PlatformActivity:
         }
 
     @staticmethod
+    def _donation_rows(
+        session: Session, start_at: datetime, end_at: datetime
+    ) -> list[tuple[DonationRecord, FundraisingCampaign | None]]:
+        statement = (
+            select(DonationRecord, FundraisingCampaign)
+            .join(FundraisingCampaign, FundraisingCampaign.id == DonationRecord.campaign_id, isouter=True)
+            .where(DonationRecord.donated_at >= start_at, DonationRecord.donated_at < end_at)
+        )
+        return list(session.execute(statement).all())
+
+    @staticmethod
+    def _top_donation_category(
+        session: Session, start_at: datetime, end_at: datetime
+    ) -> dict[str, object]:
+        category_totals: dict[str, dict[str, int | str]] = {}
+        for donation_record, _campaign in PlatformActivity._donation_rows(session, start_at, end_at):
+            category = donation_record.campaign_category or "other"
+            current = category_totals.setdefault(
+                category, {"category": category, "donation_amount": 0, "donations_count": 0}
+            )
+            current["donation_amount"] = int(current["donation_amount"]) + int(donation_record.amount or 0)
+            current["donations_count"] = int(current["donations_count"]) + 1
+        if not category_totals:
+            return {"category": "N/A", "donation_amount": 0, "donations_count": 0}
+        return max(
+            category_totals.values(),
+            key=lambda item: (int(item["donation_amount"]), int(item["donations_count"])),
+        )
+
+    @staticmethod
+    def _top_donation_campaign(
+        session: Session, start_at: datetime, end_at: datetime
+    ) -> dict[str, object]:
+        campaign_totals: dict[int, dict[str, int | str]] = {}
+        for donation_record, campaign in PlatformActivity._donation_rows(session, start_at, end_at):
+            campaign_id = int(donation_record.campaign_id)
+            current = campaign_totals.setdefault(
+                campaign_id,
+                {
+                    "campaign_id": campaign_id,
+                    "title": campaign.title if campaign else f"Campaign #{campaign_id}",
+                    "donation_amount": 0,
+                    "donations_count": 0,
+                },
+            )
+            current["donation_amount"] = int(current["donation_amount"]) + int(donation_record.amount or 0)
+            current["donations_count"] = int(current["donations_count"]) + 1
+        if not campaign_totals:
+            return {"campaign_id": None, "title": "N/A", "donation_amount": 0, "donations_count": 0}
+        return max(
+            campaign_totals.values(),
+            key=lambda item: (int(item["donation_amount"]), int(item["donations_count"])),
+        )
+
+    @staticmethod
+    def _most_viewed_campaign(
+        session: Session, start_at: datetime, end_at: datetime
+    ) -> dict[str, object]:
+        statement = (
+            select(FundraisingCampaign.title, func.count(CampaignViewRecord.id).label("view_total"))
+            .join(FundraisingCampaign, FundraisingCampaign.id == CampaignViewRecord.campaign_id)
+            .where(CampaignViewRecord.viewed_at >= start_at, CampaignViewRecord.viewed_at < end_at)
+            .group_by(FundraisingCampaign.id, FundraisingCampaign.title)
+            .order_by(func.count(CampaignViewRecord.id).desc(), FundraisingCampaign.title.asc())
+            .limit(1)
+        )
+        row = session.execute(statement).first()
+        if not row:
+            return {"title": "N/A", "views_count": 0}
+        return {"title": row[0], "views_count": int(row[1] or 0)}
+
+    @staticmethod
+    def _daily_trend_rows(
+        session: Session, start_at: datetime, end_at: datetime
+    ) -> list[dict[str, object]]:
+        day_count = max(1, (end_at.date() - start_at.date()).days)
+        rows: list[dict[str, object]] = []
+        for day_offset in range(day_count):
+            day_start = start_at + timedelta(days=day_offset)
+            day_end = day_start + timedelta(days=1)
+            day_data = PlatformActivity._activity_data(session, day_start, day_end)
+            rows.append(
+                {
+                    "date": day_start.date().isoformat(),
+                    "label": day_start.strftime("%a %m/%d"),
+                    "donations_count": day_data["donations_count"],
+                    "donation_amount": day_data["donation_amount"],
+                    "views_count": day_data["views_count"],
+                    "users_created": day_data["users_created"],
+                }
+            )
+        return rows
+
+    @staticmethod
+    def _monthly_success_rate(session: Session, period_end: datetime) -> float:
+        published_campaigns = list(
+            session.scalars(
+                select(FundraisingCampaign).where(
+                    FundraisingCampaign.status == "published",
+                    FundraisingCampaign.published_at < period_end,
+                )
+            )
+        )
+        if not published_campaigns:
+            return 0.0
+        successful_campaigns = [
+            campaign
+            for campaign in published_campaigns
+            if campaign.goal_amount and int(campaign.amount_raised or 0) >= int(campaign.goal_amount)
+        ]
+        return round((len(successful_campaigns) / len(published_campaigns)) * 100, 1)
+
+    @staticmethod
     def GetDailyActivityData(session: Session, selected_day: date | None = None) -> dict[str, object]:
         start_at = (
             PlatformActivity._period_start(selected_day)
@@ -243,7 +359,11 @@ class PlatformActivity:
             if selected_week_end
             else start_at + timedelta(days=7)
         )
-        return PlatformActivity._activity_data(session, start_at, end_at)
+        data = PlatformActivity._activity_data(session, start_at, end_at)
+        data["daily_trend_rows"] = PlatformActivity._daily_trend_rows(session, start_at, end_at)
+        data["best_performing_category"] = PlatformActivity._top_donation_category(session, start_at, end_at)
+        data["most_viewed_campaign"] = PlatformActivity._most_viewed_campaign(session, start_at, end_at)
+        return data
 
     @staticmethod
     def GetMonthlyPerformanceData(
@@ -258,7 +378,35 @@ class PlatformActivity:
             end_at = start_at.replace(year=start_at.year + 1, month=1)
         else:
             end_at = start_at.replace(month=start_at.month + 1)
-        return PlatformActivity._activity_data(session, start_at, end_at)
+        data = PlatformActivity._activity_data(session, start_at, end_at)
+        donations_count = int(data["donations_count"] or 0)
+        donation_amount = int(data["donation_amount"] or 0)
+        donor_participation = int(
+            session.scalar(
+                select(func.count(func.distinct(DonationRecord.user_id))).where(
+                    DonationRecord.donated_at >= start_at,
+                    DonationRecord.donated_at < end_at,
+                )
+            )
+            or 0
+        )
+        supported_campaigns = int(
+            session.scalar(
+                select(func.count(func.distinct(DonationRecord.campaign_id))).where(
+                    DonationRecord.donated_at >= start_at,
+                    DonationRecord.donated_at < end_at,
+                )
+            )
+            or 0
+        )
+        data["average_donation_amount"] = round(donation_amount / donations_count, 2) if donations_count else 0
+        data["top_category_by_donation"] = PlatformActivity._top_donation_category(session, start_at, end_at)
+        data["top_campaign_by_donation"] = PlatformActivity._top_donation_campaign(session, start_at, end_at)
+        data["campaign_success_rate"] = PlatformActivity._monthly_success_rate(session, end_at)
+        data["user_growth"] = data["users_created"]
+        data["donor_participation"] = donor_participation
+        data["supported_campaigns"] = supported_campaigns
+        return data
 
 
 @dataclass(frozen=True)
@@ -318,5 +466,23 @@ def _export_report_csv(report: GeneratedReport) -> str:
     writer.writerow([])
     writer.writerow(["Metric", "Value"])
     for key, value in report.data.items():
+        if isinstance(value, list):
+            writer.writerow([])
+            writer.writerow([key])
+            if value and isinstance(value[0], dict):
+                headers = list(value[0].keys())
+                writer.writerow(headers)
+                for item in value:
+                    writer.writerow([item.get(header, "") for header in headers])
+            else:
+                for item in value:
+                    writer.writerow([item])
+            continue
+        if isinstance(value, dict):
+            writer.writerow([])
+            writer.writerow([key])
+            for nested_key, nested_value in value.items():
+                writer.writerow([nested_key, nested_value])
+            continue
         writer.writerow([key, value])
     return output.getvalue()

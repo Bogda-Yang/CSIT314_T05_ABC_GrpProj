@@ -41,7 +41,7 @@
     <link
       id="page-style"
       rel="stylesheet"
-      href="/static/styles.css?v=20260423-modal-deadline-row-1"
+      href="/static/styles.css?v=20260506-project-pagination-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     />
   </head>
@@ -180,66 +180,25 @@
           </div>
           <div class="projects-public-body">
             {% if published_campaigns %}
-            <div class="public-campaign-grid">
+            <div
+              class="public-campaign-grid"
+              id="public-campaign-grid"
+              data-next-offset="{{ project_next_offset }}"
+              data-page-size="{{ project_page_size }}"
+              data-total-count="{{ project_total_count }}"
+              data-category="{{ selected_category or '' }}"
+              data-query="{{ search_query }}"
+              data-sort="{{ selected_sort }}"
+            >
               {% for campaign in published_campaigns %}
-              <article class="projects-panel public-campaign-card">
-                <button
-                  class="public-campaign-open"
-                  type="button"
-                  data-project-id="{{ campaign.id }}"
-                  data-project-title="{{ campaign.title }}"
-                  data-project-category="{{ campaign.category_label }}"
-                  data-project-owner="{{ campaign.owner_username }}"
-                  data-project-owner-email="{{ campaign.owner_email or '' }}"
-                  data-project-goal="{% if campaign.goal_amount %}${{ '{:,}'.format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}"
-                  data-project-raised="${{ '{:,}'.format(campaign.amount_raised) }} raised"
-                  data-project-progress="{{ campaign.progress.progress_percentage }}%"
-                  data-project-funding-status="{{ campaign.progress.funding_status }}"
-                  data-project-deadline-status="{{ campaign.progress.deadline_status }}"
-                  data-project-published="{% if campaign.published_at %}{{ campaign.published_at }}{% else %}Ready for support{% endif %}"
-                  data-project-description="{{ campaign.description or 'This approved campaign is ready to receive support.' }}"
-                  data-project-image="{{ campaign.cover_image_url or '' }}"
-                  data-project-images='{{ campaign.image_urls|tojson }}'
-                  data-project-is-favourite="{{ 'true' if campaign.is_favourite else 'false' }}"
-                  data-project-is-local="{{ 'true' if campaign.actions_disabled else 'false' }}"
-                >
-                  <div class="public-campaign-image">
-                    {% if campaign.cover_image_url %}
-                    <img src="{{ campaign.cover_image_url }}" alt="{{ campaign.title }} cover image" />
-                    {% else %}
-                    <div class="public-campaign-image-placeholder">Approved Campaign</div>
-                    {% endif %}
-                  </div>
-                  <div class="public-campaign-body">
-                    <span class="campaign-category-badge">{{ campaign.category_label }}</span>
-                    <strong>{{ campaign.title }}</strong>
-                    <div class="public-campaign-progress">
-                      <div class="progress-track compact" aria-hidden="true">
-                        <span
-                          class="progress-fill"
-                          style="width: {{ campaign.progress.progress_percentage }}%;"
-                        ></span>
-                      </div>
-                      <div class="public-campaign-progress-meta">
-                        <span>{{ campaign.progress.progress_percentage }}% funded</span>
-                        {% if campaign.progress.goal_amount %}
-                        <span>
-                          {% if campaign.progress.remaining_amount and campaign.progress.remaining_amount > 0 %}
-                          ${{ "{:,}".format(campaign.progress.remaining_amount) }} left to goal
-                          {% else %}
-                          Goal reached
-                          {% endif %}
-                        </span>
-                        {% else %}
-                        <span>Goal pending</span>
-                        {% endif %}
-                      </div>
-                      <p class="public-campaign-progress-status">{{ campaign.progress.deadline_status }}</p>
-                    </div>
-                  </div>
-                </button>
-              </article>
+              {% include "_public_campaign_card.html" %}
               {% endfor %}
+            </div>
+            <div class="projects-load-more-panel" {% if not project_has_more %}hidden{% endif %}>
+              <button class="ghost-button" id="projects-load-more" type="button">Load More</button>
+              <p id="projects-load-status">
+                Showing {{ project_next_offset }} of {{ project_total_count }} campaigns.
+              </p>
             </div>
             {% else %}
             <section class="projects-empty-panel">
@@ -405,7 +364,7 @@
     </div>
 
     <script
-      src="/static/site.js?v=20260501-project-flash-target-1"
+      src="/static/site.js?v=20260506-project-pagination-1"
       onerror="window.__fireflyReloadOnce && window.__fireflyReloadOnce()"
     ></script>
   </body>

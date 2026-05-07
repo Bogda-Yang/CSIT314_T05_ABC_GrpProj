@@ -1,0 +1,57 @@
+<article class="projects-panel public-campaign-card">
+  <button
+    class="public-campaign-open"
+    type="button"
+    data-project-id="{{ campaign.id }}"
+    data-project-title="{{ campaign.title }}"
+    data-project-category="{{ campaign.category_label }}"
+    data-project-owner="{{ campaign.owner_username }}"
+    data-project-owner-email="{{ campaign.owner_email or '' }}"
+    data-project-goal="{% if campaign.goal_amount %}${{ '{:,}'.format(campaign.goal_amount) }} goal{% else %}Goal pending{% endif %}"
+    data-project-raised="${{ '{:,}'.format(campaign.amount_raised) }} raised"
+    data-project-progress="{{ campaign.progress.progress_percentage }}%"
+    data-project-funding-status="{{ campaign.progress.funding_status }}"
+    data-project-deadline-status="{{ campaign.progress.deadline_status }}"
+    data-project-published="{% if campaign.published_at %}{{ campaign.published_at }}{% else %}Ready for support{% endif %}"
+    data-project-description="{{ campaign.description or 'This approved campaign is ready to receive support.' }}"
+    data-project-image="{{ campaign.cover_image_url or '' }}"
+    data-project-images='{{ campaign.image_urls|tojson }}'
+    data-project-is-favourite="{{ 'true' if campaign.is_favourite else 'false' }}"
+    data-project-is-local="{{ 'true' if campaign.actions_disabled else 'false' }}"
+  >
+    <div class="public-campaign-image">
+      {% if campaign.cover_image_url %}
+      <img src="{{ campaign.cover_image_url }}" alt="{{ campaign.title }} cover image" />
+      {% else %}
+      <div class="public-campaign-image-placeholder">Approved Campaign</div>
+      {% endif %}
+    </div>
+    <div class="public-campaign-body">
+      <span class="campaign-category-badge">{{ campaign.category_label }}</span>
+      <strong>{{ campaign.title }}</strong>
+      <div class="public-campaign-progress">
+        <div class="progress-track compact" aria-hidden="true">
+          <span
+            class="progress-fill"
+            style="width: {{ campaign.progress.progress_percentage }}%;"
+          ></span>
+        </div>
+        <div class="public-campaign-progress-meta">
+          <span>{{ campaign.progress.progress_percentage }}% funded</span>
+          {% if campaign.progress.goal_amount %}
+          <span>
+            {% if campaign.progress.remaining_amount and campaign.progress.remaining_amount > 0 %}
+            ${{ "{:,}".format(campaign.progress.remaining_amount) }} left to goal
+            {% else %}
+            Goal reached
+            {% endif %}
+          </span>
+          {% else %}
+          <span>Goal pending</span>
+          {% endif %}
+        </div>
+        <p class="public-campaign-progress-status">{{ campaign.progress.deadline_status }}</p>
+      </div>
+    </div>
+  </button>
+</article>

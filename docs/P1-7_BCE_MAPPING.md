@@ -54,8 +54,8 @@ Implementation note:
 |---|---|
 | `ReportManagementPage` | `AccessReportManagementPage()`, `SelectDailyReportType()`, `GenerateDailyReport()`, and `ViewDailyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportDailyReport()` is handled by `export_report()` `routers/admin.py:405` |
 | `ReportController` | `CollectDailyActivityData()` `services/admin_service.py:427`, `GenerateDailyReport()` `services/admin_service.py:447`, `GetDailyReport()` `services/admin_service.py:469`, `ExportReport()` `services/admin_service.py:500` |
-| `PlatformActivity` | `GetDailyActivityData()` `models/admin.py:220` |
-| `DailyReport` | `GenerateReport()` `models/admin.py:273`, `GetReport()` `models/admin.py:277`, `ExportReport()` `models/admin.py:281` |
+| `PlatformActivity` | `GetDailyActivityData()` `models/admin.py:336` |
+| `DailyReport` | `GenerateReport()` `models/admin.py:421`, `GetReport()` `models/admin.py:425`, `ExportReport()` `models/admin.py:429` |
 
 ## P6 Generate Weekly Report
 
@@ -63,8 +63,8 @@ Implementation note:
 |---|---|
 | `ReportManagementPage` | `AccessReportManagementPage()`, `SelectWeeklyReportType()`, `GenerateWeeklyReport()`, and `ViewWeeklyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportWeeklyReport()` is handled by `export_report()` `routers/admin.py:405` |
 | `ReportController` | `CollectWeeklyActivityData()` `services/admin_service.py:431`, `GenerateWeeklyReport()` `services/admin_service.py:451`, `GetWeeklyReport()` `services/admin_service.py:473`, `ExportReport()` `services/admin_service.py:500` |
-| `PlatformActivity` | `GetWeeklyActivityData()` `models/admin.py:229` |
-| `WeeklyReport` | `GenerateReport()` `models/admin.py:287`, `GetReport()` `models/admin.py:291`, `ExportReport()` `models/admin.py:295` |
+| `PlatformActivity` | `GetWeeklyActivityData()` `models/admin.py:345` |
+| `WeeklyReport` | `GenerateReport()` `models/admin.py:435`, `GetReport()` `models/admin.py:439`, `ExportReport()` `models/admin.py:443` |
 
 ## P7 Generate Monthly Report
 
@@ -72,5 +72,5 @@ Implementation note:
 |---|---|
 | `ReportManagementPage` | `AccessReportManagementPage()`, `SelectMonthlyReportType()`, `GenerateMonthlyReport()`, and `ViewMonthlyReport()` are handled by `dashboard_page()` `routers/admin.py:51`; `ExportMonthlyReport()` is handled by `export_report()` `routers/admin.py:405` |
 | `ReportController` | `CollectMonthlyPerformanceData()` `services/admin_service.py:441`, `GenerateMonthlyReport()` `services/admin_service.py:463`, `GetMonthlyReport()` `services/admin_service.py:483`, `ExportReport()` `services/admin_service.py:500` |
-| `PlatformActivity` | `GetMonthlyPerformanceData()` `models/admin.py:249` |
-| `MonthlyReport` | `GenerateReport()` `models/admin.py:301`, `GetReport()` `models/admin.py:305`, `ExportReport()` `models/admin.py:309` |
+| `PlatformActivity` | `GetMonthlyPerformanceData()` `models/admin.py:369` |
+| `MonthlyReport` | `GenerateReport()` `models/admin.py:449`, `GetReport()` `models/admin.py:453`, `ExportReport()` `models/admin.py:457` |

@@ -20,86 +20,86 @@ Scope:
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignSearchPage` | `projects_page()` `routers/donee.py:165` |
-| `CampaignSearchController` | `SearchFundraisingCampaigns()` `services/donation_service.py:30`, `RetrieveMatchingCampaigns()` `services/donation_service.py:44` |
-| `FundraisingCampaign` | `SearchCampaigns()` `models/campaign.py:97`, `GetMatchingCampaigns()` `models/campaign.py:111` |
+| `CampaignSearchPage` | `projects_page()` `routers/donee.py:186` |
+| `CampaignSearchController` | `SearchFundraisingCampaigns()` `services/donation_service.py:31`, `RetrieveMatchingCampaigns()` `services/donation_service.py:49` |
+| `FundraisingCampaign` | `SearchCampaigns()` `models/campaign.py:101`, `GetMatchingCampaigns()` `models/campaign.py:119` |
 
 ## D2 Filter Campaigns Using Selectable Criteria
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignSearchPage` | `projects_page()` `routers/donee.py:165` |
-| `CampaignFilterController` | `FilterCampaigns()` `services/donation_service.py:60`, `RetrieveFilteredCampaigns()` `services/donation_service.py:74` |
-| `FundraisingCampaign` | `FilterCampaigns()` `models/campaign.py:134`, `GetFilteredCampaigns()` `models/campaign.py:148` |
+| `CampaignSearchPage` | `projects_page()` `routers/donee.py:186` |
+| `CampaignFilterController` | `FilterCampaigns()` `services/donation_service.py:69`, `RetrieveFilteredCampaigns()` `services/donation_service.py:87` |
+| `FundraisingCampaign` | `FilterCampaigns()` `models/campaign.py:145`, `GetFilteredCampaigns()` `models/campaign.py:163` |
 
 ## D3 View Campaign Details
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignDetailPage` | `projects_page()` `routers/donee.py:165` |
-| `CampaignDetailController` | `RetrieveCampaignInformation()` `services/donation_service.py:90`, `GetCampaignDetails()` `services/donation_service.py:99` |
+| `CampaignDetailPage` | `projects_page()` `routers/donee.py:186` |
+| `CampaignDetailController` | `RetrieveCampaignInformation()` `services/donation_service.py:107`, `GetCampaignDetails()` `services/donation_service.py:116` |
 | `FundraisingCampaign` | `GetCampaignById()` `models/campaign.py:71`, `GetCampaignDetails()` `models/campaign.py:67` |
 
 ## D4 View Campaign Images
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignDetailPage` | `projects_page()` `routers/donee.py:165` |
-| `CampaignImageController` | `RetrieveCampaignImages()` `services/donation_service.py:106`, `GetCampaignImages()` `services/donation_service.py:110` |
-| `CampaignImage` | `GetCampaignImages()` `models/campaign.py:429`, `GetImageRecord()` `models/campaign.py:442` |
+| `CampaignDetailPage` | `projects_page()` `routers/donee.py:186` |
+| `CampaignImageController` | `RetrieveCampaignImages()` `services/donation_service.py:123`, `GetCampaignImages()` `services/donation_service.py:127` |
+| `CampaignImage` | `GetCampaignImages()` `models/campaign.py:479`, `GetImageRecord()` `models/campaign.py:492` |
 
 ## D5 Save Campaigns to Favourite List
 
 | BCE Class | Method definitions |
 |---|---|
-| `FavouriteListPage` | `projects_page()` `routers/donee.py:165`, `save_campaign_to_favourite_list()` `routers/donee.py:428` |
-| `FavouriteController` | `SaveCampaignToFavouriteList()` `services/donation_service.py:116`, `AddCampaignToFavouriteList()` `services/donation_service.py:123` |
+| `FavouriteListPage` | `projects_page()` `routers/donee.py:186`, `save_campaign_to_favourite_list()` `routers/donee.py:506` |
+| `FavouriteController` | `SaveCampaignToFavouriteList()` `services/donation_service.py:133`, `AddCampaignToFavouriteList()` `services/donation_service.py:140` |
 | `FavouriteCampaign` | `AddToFavourite()` `models/donation.py:249`, `SaveFavouriteRecord()` `models/donation.py:257` |
 
 ## D6 Remove Campaigns from Favourite List
 
 | BCE Class | Method definitions |
 |---|---|
-| `FavouriteListPage` | `your_impact_page()` `routers/donee.py:263`, `remove_campaign_from_favourite_list()` `routers/donee.py:466` |
-| `FavouriteController` | `RemoveCampaignFromFavouriteList()` `services/donation_service.py:136` |
+| `FavouriteListPage` | `your_impact_page()` `routers/donee.py:341`, `remove_campaign_from_favourite_list()` `routers/donee.py:544` |
+| `FavouriteController` | `RemoveCampaignFromFavouriteList()` `services/donation_service.py:153` |
 | `FavouriteCampaign` | `RemoveFromFavourite()` `models/donation.py:271`, `DeleteFavouriteRecord()` `models/donation.py:277` |
 
 ## D7 View Favourite Campaigns
 
 | BCE Class | Method definitions |
 |---|---|
-| `FavouriteListPage` | `your_impact_page()` `routers/donee.py:263`, `projects_page()` `routers/donee.py:165` |
-| `FavouriteController` | `RetrieveFavouriteCampaigns()` `services/donation_service.py:146`, `GetFavouriteCampaignDetails()` `services/donation_service.py:150` |
+| `FavouriteListPage` | `your_impact_page()` `routers/donee.py:341`, `projects_page()` `routers/donee.py:186` |
+| `FavouriteController` | `RetrieveFavouriteCampaigns()` `services/donation_service.py:163`, `GetFavouriteCampaignDetails()` `services/donation_service.py:167` |
 | `FavouriteCampaign` | `GetFavouriteCampaigns()` `models/donation.py:281`, `GetFavouriteCampaignById()` `models/donation.py:297` |
 
 ## D8 View Donation History
 
 | BCE Class | Method definitions |
 |---|---|
-| `DonationHistoryPage` | `your_impact_page()` `routers/donee.py:263` |
-| `DonationHistoryController` | `RetrieveDonationRecords()` `services/donation_service.py:165`, `GetDonationDetails()` `services/donation_service.py:179` |
+| `DonationHistoryPage` | `your_impact_page()` `routers/donee.py:341` |
+| `DonationHistoryController` | `RetrieveDonationRecords()` `services/donation_service.py:182`, `GetDonationDetails()` `services/donation_service.py:196` |
 | `DonationRecord` | `GetDonationRecords()` `models/donation.py:45`, `GetDonationById()` `models/donation.py:54` |
 
 ## D9 Filter Donations by Category
 
 | BCE Class | Method definitions |
 |---|---|
-| `DonationHistoryPage` | `your_impact_page()` `routers/donee.py:263` |
-| `DonationFilterController` | `FilterDonationsByCategory()` `services/donation_service.py:201`, `RetrieveFilteredDonationRecords()` `services/donation_service.py:229` |
+| `DonationHistoryPage` | `your_impact_page()` `routers/donee.py:341` |
+| `DonationFilterController` | `FilterDonationsByCategory()` `services/donation_service.py:218`, `RetrieveFilteredDonationRecords()` `services/donation_service.py:246` |
 | `DonationRecord` | `FilterByCategory()` `models/donation.py:64`, `GetFilteredDonations()` `models/donation.py:92` |
 
 ## D10 Filter Donations by Date Period
 
 | BCE Class | Method definitions |
 |---|---|
-| `DonationHistoryPage` | `your_impact_page()` `routers/donee.py:263` |
-| `DonationFilterController` | `FilterDonationsByDatePeriod()` `services/donation_service.py:215`, `RetrieveFilteredDonationRecords()` `services/donation_service.py:229` |
+| `DonationHistoryPage` | `your_impact_page()` `routers/donee.py:341` |
+| `DonationFilterController` | `FilterDonationsByDatePeriod()` `services/donation_service.py:232`, `RetrieveFilteredDonationRecords()` `services/donation_service.py:246` |
 | `DonationRecord` | `FilterByDatePeriod()` `models/donation.py:78`, `GetFilteredDonations()` `models/donation.py:92` |
 
 ## D11 View Campaign Progress
 
 | BCE Class | Method definitions |
 |---|---|
-| `CampaignDetailPage` | `projects_page()` `routers/donee.py:165`, `support_campaign()` `routers/donee.py:369` |
-| `CampaignProgressController` | `RetrieveCampaignProgressData()` `services/donation_service.py:245`, `GetCampaignProgress()` `services/donation_service.py:249` |
-| `CampaignProgress` | `GetCampaignProgress()` `models/campaign.py:762`, `GetFundingStatusDetails()` `models/campaign.py:786` |
+| `CampaignDetailPage` | `projects_page()` `routers/donee.py:186`, `support_campaign()` `routers/donee.py:447` |
+| `CampaignProgressController` | `RetrieveCampaignProgressData()` `services/donation_service.py:262`, `GetCampaignProgress()` `services/donation_service.py:266` |
+| `CampaignProgress` | `GetCampaignProgress()` `models/campaign.py:812`, `GetFundingStatusDetails()` `models/campaign.py:836` |

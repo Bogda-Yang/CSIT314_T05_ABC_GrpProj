@@ -8,6 +8,7 @@ from core.config import (
     BASE_DIR,
     DEFAULT_DONEE_CAMPAIGN_SORT,
     DEFAULT_DONATION_DATE_PERIOD,
+    PROJECTS_PAGE_SIZE,
 )
 from core.storage import build_avatar_url
 from core.db import get_session
@@ -30,6 +31,7 @@ from services.donation_service import (
     get_donation_date_filters,
     get_projects_category_filters,
     get_projects_sort_filters,
+    get_published_campaign_count,
     get_published_campaign_summaries,
     get_results_summary,
     get_selected_date_period_label,
@@ -62,6 +64,25 @@ router = APIRouter()
 
 class RechargeBalancePayload(BaseModel):
     amount: int = Field(ge=1, le=100000)
+
+
+def normalize_projects_request(
+    category: str | None, search_query: str, sort_order: str
+) -> tuple[str | None, str, str]:
+    requested_category = (category or "").strip().lower()
+    selected_category = None
+    if requested_category and requested_category != "all":
+        selected_category = normalize_campaign_category(requested_category)
+    return selected_category, search_query.strip(), normalize_projects_sort(sort_order)
+
+
+def clamp_projects_page_limit(limit: int) -> int:
+    return min(max(limit, 1), 50)
+
+
+def render_public_campaign_cards(campaigns: list[dict[str, object]]) -> str:
+    card_template = templates.env.get_template("_public_campaign_card.html")
+    return "\n".join(card_template.render(campaign=campaign) for campaign in campaigns)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -171,12 +192,7 @@ def projects_page(
     if should_redirect_direct_visit_to_home(request):
         return RedirectResponse(url="/", status_code=303)
 
-    requested_category = (category or "").strip().lower()
-    selected_category = None
-    if requested_category and requested_category != "all":
-        selected_category = normalize_campaign_category(requested_category)
-    selected_sort = normalize_projects_sort(sort)
-    search_query = q.strip()
+    selected_category, search_query, selected_sort = normalize_projects_request(category, q, sort)
 
     with get_session() as session:
         favourite_campaign_ids: set[int] = set()
@@ -194,6 +210,11 @@ def projects_page(
             search_query,
             selected_sort,
             favourite_campaign_ids=favourite_campaign_ids,
+            limit=PROJECTS_PAGE_SIZE,
+            offset=0,
+        )
+        project_total_count = get_published_campaign_count(
+            session, selected_category, search_query
         )
         primary_category_filters, overflow_category_filters = get_projects_category_filters(
             selected_category,
@@ -220,11 +241,68 @@ def projects_page(
             "overflow_category_filters": overflow_category_filters,
             "sort_filters": sort_filters,
             "results_summary": get_results_summary(
-                published_campaigns, selected_category, search_query
+                published_campaigns, selected_category, search_query, project_total_count
             ),
             "published_campaigns": published_campaigns,
+            "project_page_size": PROJECTS_PAGE_SIZE,
+            "project_total_count": project_total_count,
+            "project_next_offset": len(published_campaigns),
+            "project_has_more": len(published_campaigns) < project_total_count,
             **user_context,
         },
+    )
+
+
+@router.get("/api/projects")
+def projects_page_batch(
+    request: Request,
+    category: str | None = Query(default=None),
+    q: str = Query(default=""),
+    sort: str = Query(default=DEFAULT_DONEE_CAMPAIGN_SORT),
+    limit: int = Query(default=PROJECTS_PAGE_SIZE, ge=1),
+    offset: int = Query(default=0, ge=0),
+) -> JSONResponse:
+    selected_category, search_query, selected_sort = normalize_projects_request(category, q, sort)
+    clean_limit = clamp_projects_page_limit(limit)
+
+    with get_session() as session:
+        favourite_campaign_ids: set[int] = set()
+        try:
+            user = get_authenticated_user(request, session)
+        except HTTPException:
+            user = None
+
+        if user:
+            favourite_campaign_ids = FavouriteController.GetFavouriteCampaignIds(session, user.id)
+
+        published_campaigns = get_published_campaign_summaries(
+            session,
+            selected_category,
+            search_query,
+            selected_sort,
+            favourite_campaign_ids=favourite_campaign_ids,
+            limit=clean_limit,
+            offset=offset,
+        )
+        project_total_count = get_published_campaign_count(
+            session, selected_category, search_query
+        )
+
+    next_offset = offset + len(published_campaigns)
+    return JSONResponse(
+        {
+            "html": render_public_campaign_cards(published_campaigns),
+            "count": len(published_campaigns),
+            "total": project_total_count,
+            "next_offset": next_offset,
+            "has_more": next_offset < project_total_count,
+            "summary": get_results_summary(
+                published_campaigns,
+                selected_category,
+                search_query,
+                project_total_count,
+            ),
+        }
     )
 
 

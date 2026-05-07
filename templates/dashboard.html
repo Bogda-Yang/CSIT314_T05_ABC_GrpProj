@@ -468,6 +468,35 @@
               </article>
               {% endfor %}
             </div>
+            {% if platform_report.trend_rows %}
+            <div class="admin-report-trend">
+              <h3>Daily Trend</h3>
+              <div class="admin-table-scroll">
+                <table class="admin-data-table admin-report-trend-table">
+                  <thead>
+                    <tr>
+                      <th>Day</th>
+                      <th>Donations</th>
+                      <th>Donation Amount</th>
+                      <th>Views</th>
+                      <th>New Users</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for trend_row in platform_report.trend_rows %}
+                    <tr>
+                      <td>{{ trend_row.label }}</td>
+                      <td>{{ trend_row.donations_count }}</td>
+                      <td>{{ trend_row.donation_amount }}</td>
+                      <td>{{ trend_row.views_count }}</td>
+                      <td>{{ trend_row.users_created }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
             <div class="account-actions">
               <a
                 class="solid-button"
