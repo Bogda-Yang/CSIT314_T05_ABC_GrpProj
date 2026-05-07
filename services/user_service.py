@@ -860,12 +860,16 @@ class PasswordController:
 
     @staticmethod
     def SendPasswordChangeNotification(user_account: UserAccount) -> None:
-        send_notification_email(
-            user_account.email,
-            "Your FireflyFund password was changed",
-            "Your FireflyFund password has been updated successfully. "
-            "If this was not you, reset your password immediately.",
-        )
+        try:
+            send_notification_email(
+                user_account.email,
+                "Your FireflyFund password was changed",
+                "Your FireflyFund password has been updated successfully. "
+                "If this was not you, reset your password immediately.",
+            )
+        except HTTPException as error:
+            if error.status_code != 503:
+                raise
 
     @staticmethod
     def UpdatePassword(
