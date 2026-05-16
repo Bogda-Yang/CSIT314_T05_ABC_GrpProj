@@ -968,3 +968,81 @@ def get_results_summary(
 
 def normalize_projects_sort(sort_order: str | None) -> str:
     return normalize_donee_campaign_sort(sort_order)
+
+
+class CampaignSummaryService:
+    @staticmethod
+    def GetPublishedCampaignSummaries(
+        session: Session,
+        selected_category: str | None,
+        search_query: str,
+        selected_sort: str,
+        favourite_campaign_ids: set[int] | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, object]]:
+        return get_published_campaign_summaries(
+            session,
+            selected_category,
+            search_query,
+            selected_sort,
+            favourite_campaign_ids=favourite_campaign_ids,
+            limit=limit,
+            offset=offset,
+        )
+
+    @staticmethod
+    def GetPublishedCampaignCount(
+        session: Session,
+        selected_category: str | None,
+        search_query: str,
+    ) -> int:
+        return get_published_campaign_count(session, selected_category, search_query)
+
+    @staticmethod
+    def SerializeCampaignSummary(
+        session: Session, campaign: FundraisingCampaign
+    ) -> dict[str, object]:
+        return serialize_campaign_summary(session, campaign)
+
+    @staticmethod
+    def SerializeCampaignSummaries(
+        session: Session, campaigns: list[FundraisingCampaign]
+    ) -> list[dict[str, object]]:
+        return serialize_campaign_summaries(session, campaigns)
+
+    @staticmethod
+    def BuildCampaignSummaryPayload(
+        campaign: FundraisingCampaign,
+        owner_account,
+        image_records: list[CampaignImage],
+        shortlist_count: int,
+    ) -> dict[str, object]:
+        from services.campaign_service import build_campaign_summary_payload
+
+        return build_campaign_summary_payload(
+            campaign,
+            owner_account,
+            image_records,
+            shortlist_count,
+        )
+
+    @staticmethod
+    def BuildCampaignImageUrls(image_records: list[CampaignImage]) -> list[str]:
+        from services.campaign_service import build_campaign_image_urls
+
+        return build_campaign_image_urls(image_records)
+
+    @staticmethod
+    def BuildCampaignProgressPayload(campaign: FundraisingCampaign) -> dict[str, object]:
+        from services.campaign_service import build_campaign_progress_payload
+
+        return build_campaign_progress_payload(campaign)
+
+
+class DonationRecordSerializer:
+    @staticmethod
+    def SerializeDonationRecord(
+        session: Session, donation_record: DonationRecord
+    ) -> dict[str, object]:
+        return serialize_donation_record(session, donation_record)

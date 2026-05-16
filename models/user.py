@@ -112,6 +112,16 @@ class VerificationCode(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    @staticmethod
+    def FindVerificationRecord(session: Session, email: str) -> "VerificationCode | None":
+        return session.get(VerificationCode, email)
+
+    @staticmethod
+    def DeleteVerificationRecord(session: Session, email: str) -> None:
+        record = VerificationCode.FindVerificationRecord(session, email)
+        if record:
+            session.delete(record)
+
 
 class PasswordResetCode(Base):
     __tablename__ = "password_reset_codes"
@@ -121,6 +131,16 @@ class PasswordResetCode(Base):
     salt: Mapped[str] = mapped_column(String(64), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    @staticmethod
+    def FindPasswordResetRecord(session: Session, email: str) -> "PasswordResetCode | None":
+        return session.get(PasswordResetCode, email)
+
+    @staticmethod
+    def DeletePasswordResetRecord(session: Session, email: str) -> None:
+        record = PasswordResetCode.FindPasswordResetRecord(session, email)
+        if record:
+            session.delete(record)
 
 
 class UserProfile(Base):
@@ -279,6 +299,15 @@ class PasswordHistory(Base):
         )
         return list(session.scalars(statement))
 
+    @staticmethod
+    def GetPasswordHistoryRecords(session: Session, user_id: int) -> list["PasswordHistory"]:
+        statement = select(PasswordHistory).where(PasswordHistory.user_id == user_id)
+        return list(session.scalars(statement))
+
+    @staticmethod
+    def DeletePasswordHistoryRecord(session: Session, record: "PasswordHistory") -> None:
+        session.delete(record)
+
 
 class UserSession(Base):
     __tablename__ = "user_sessions"
@@ -310,8 +339,17 @@ class UserSession(Base):
         return session.get(UserSession, session_key)
 
     @staticmethod
+    def GetSessionsByUserId(session: Session, user_id: int) -> list["UserSession"]:
+        statement = select(UserSession).where(UserSession.user_id == user_id)
+        return list(session.scalars(statement))
+
+    @staticmethod
     def InvalidateSession(user_session: "UserSession") -> None:
         user_session.invalidated_at = now_dt()
+
+    @staticmethod
+    def DeleteSessionRecord(session: Session, user_session: "UserSession") -> None:
+        session.delete(user_session)
 
 
 class AuthenticationToken(Base):
@@ -342,8 +380,19 @@ class AuthenticationToken(Base):
         return session.get(AuthenticationToken, token_value)
 
     @staticmethod
+    def GetTokensBySessionKey(session: Session, session_key: str) -> list["AuthenticationToken"]:
+        statement = select(AuthenticationToken).where(
+            AuthenticationToken.session_key == session_key
+        )
+        return list(session.scalars(statement))
+
+    @staticmethod
     def RevokeToken(token: "AuthenticationToken") -> None:
         token.revoked_at = now_dt()
+
+    @staticmethod
+    def DeleteTokenRecord(session: Session, token: "AuthenticationToken") -> None:
+        session.delete(token)
 
 
 class UserActivityLog(Base):

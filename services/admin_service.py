@@ -265,20 +265,14 @@ class AccountStatusController:
 
     @staticmethod
     def ClearAccountSessions(session: Session, user_id: int) -> None:
-        session_records = list(
-            session.scalars(select(UserSession).where(UserSession.user_id == user_id))
-        )
+        session_records = UserSession.GetSessionsByUserId(session, user_id)
         for user_session in session_records:
-            linked_tokens = list(
-                session.scalars(
-                    select(AuthenticationToken).where(
-                        AuthenticationToken.session_key == user_session.session_key
-                    )
-                )
+            linked_tokens = AuthenticationToken.GetTokensBySessionKey(
+                session, user_session.session_key
             )
             for token in linked_tokens:
-                session.delete(token)
-            session.delete(user_session)
+                AuthenticationToken.DeleteTokenRecord(session, token)
+            UserSession.DeleteSessionRecord(session, user_session)
 
 
 class AccountRemovalController:

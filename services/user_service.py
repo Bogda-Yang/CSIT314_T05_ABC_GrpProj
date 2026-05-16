@@ -1032,11 +1032,9 @@ class DeleteAccountController:
 
     @staticmethod
     def ClearPasswordHistory(session: Session, user_id: int) -> None:
-        password_history_records = list(
-            session.scalars(select(PasswordHistory).where(PasswordHistory.user_id == user_id))
-        )
+        password_history_records = PasswordHistory.GetPasswordHistoryRecords(session, user_id)
         for record in password_history_records:
-            session.delete(record)
+            PasswordHistory.DeletePasswordHistoryRecord(session, record)
 
     @staticmethod
     def ClearUserFavourites(session: Session, user_id: int) -> None:
@@ -1053,27 +1051,16 @@ class DeleteAccountController:
 
     @staticmethod
     def ClearUserSessions(session: Session, user_id: int) -> None:
-        session_records = list(
-            session.scalars(select(UserSession).where(UserSession.user_id == user_id))
-        )
+        session_records = UserSession.GetSessionsByUserId(session, user_id)
         for user_session in session_records:
-            linked_tokens = list(
-                session.scalars(
-                    select(AuthenticationToken).where(
-                        AuthenticationToken.session_key == user_session.session_key
-                    )
-                )
+            linked_tokens = AuthenticationToken.GetTokensBySessionKey(
+                session, user_session.session_key
             )
             for token in linked_tokens:
-                session.delete(token)
-            session.delete(user_session)
+                AuthenticationToken.DeleteTokenRecord(session, token)
+            UserSession.DeleteSessionRecord(session, user_session)
 
     @staticmethod
     def ClearVerificationRecords(session: Session, email: str) -> None:
-        verification_record = session.get(VerificationCode, email)
-        if verification_record:
-            session.delete(verification_record)
-
-        password_reset_record = session.get(PasswordResetCode, email)
-        if password_reset_record:
-            session.delete(password_reset_record)
+        VerificationCode.DeleteVerificationRecord(session, email)
+        PasswordResetCode.DeletePasswordResetRecord(session, email)

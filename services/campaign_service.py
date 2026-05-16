@@ -558,59 +558,67 @@ def build_campaign_progress_payload(campaign: FundraisingCampaign) -> dict[str, 
     }
 
 
+class CampaignDetailSerializer:
+    @staticmethod
+    def SerializeCampaignDetail(
+        session: Session, campaign: FundraisingCampaign
+    ) -> dict[str, object]:
+        owner_account = UserAccount.GetUserAccount(session, campaign.owner_id)
+        image_records = CampaignImage.GetImageDetails(session, campaign.id)
+        status_details = CampaignStatus.GetStatusDetails(session, campaign)
+        exposure_details = CampaignAnalytics.GetExposureDetails(session, campaign.id)
+        interest_details = CampaignAnalytics.GetInterestDetails(session, campaign.id)
+        progress_data = CampaignProgress.GetFundingStatusDetails(session, campaign.id)
+        return {
+            "id": campaign.id,
+            "owner_id": campaign.owner_id,
+            "owner_username": owner_account.username if owner_account else "Unknown",
+            "owner_email": owner_account.email if owner_account else None,
+            "title": clean_campaign_title_for_display(campaign.title),
+            "category": campaign.category or DEFAULT_CAMPAIGN_CATEGORY,
+            "category_label": humanize_campaign_category(campaign.category),
+            "goal_amount": campaign.goal_amount,
+            "amount_raised": int(campaign.amount_raised or 0),
+            "description": campaign.description,
+            "deadline": campaign.deadline,
+            "workflow_stage": campaign.workflow_stage or 0,
+            "workflow_stage_label": humanize_campaign_workflow_stage(campaign.workflow_stage or 0),
+            "status": campaign.status,
+            "status_label": humanize_campaign_status(campaign.status),
+            "is_completed": FundraisingCampaign.IsCompleted(campaign),
+            "created_at": campaign.created_at.strftime("%Y-%m-%d %H:%M"),
+            "updated_at": campaign.updated_at.strftime("%Y-%m-%d %H:%M"),
+            "submitted_at": status_details["submitted_at"],
+            "published_at": status_details["published_at"],
+            "reviewed_at": status_details["reviewed_at"],
+            "rejection_reason": status_details["rejection_reason"],
+            "view_count": int(campaign.view_count or 0),
+            "shortlist_count": int(interest_details["shortlist_count"]),
+            "latest_viewed_at": exposure_details["latest_viewed_at"],
+            "latest_shortlisted_at": interest_details["latest_shortlisted_at"],
+            "recent_view_timestamps": exposure_details["recent_view_timestamps"],
+            "progress": progress_data,
+            "image_count": len(image_records),
+            "images": [
+                {
+                    "id": record.id,
+                    "url": build_campaign_image_url(record.image_path),
+                }
+                for record in image_records
+                if build_campaign_image_url(record.image_path)
+            ],
+            "image_urls": [
+                build_campaign_image_url(record.image_path)
+                for record in image_records
+                if build_campaign_image_url(record.image_path)
+            ],
+        }
+
+
 def serialize_campaign_detail(
     session: Session, campaign: FundraisingCampaign
 ) -> dict[str, object]:
-    owner_account = UserAccount.GetUserAccount(session, campaign.owner_id)
-    image_records = CampaignImage.GetImageDetails(session, campaign.id)
-    status_details = CampaignStatus.GetStatusDetails(session, campaign)
-    exposure_details = CampaignAnalytics.GetExposureDetails(session, campaign.id)
-    interest_details = CampaignAnalytics.GetInterestDetails(session, campaign.id)
-    progress_data = CampaignProgress.GetFundingStatusDetails(session, campaign.id)
-    return {
-        "id": campaign.id,
-        "owner_id": campaign.owner_id,
-        "owner_username": owner_account.username if owner_account else "Unknown",
-        "owner_email": owner_account.email if owner_account else None,
-        "title": clean_campaign_title_for_display(campaign.title),
-        "category": campaign.category or DEFAULT_CAMPAIGN_CATEGORY,
-        "category_label": humanize_campaign_category(campaign.category),
-        "goal_amount": campaign.goal_amount,
-        "amount_raised": int(campaign.amount_raised or 0),
-        "description": campaign.description,
-        "deadline": campaign.deadline,
-        "workflow_stage": campaign.workflow_stage or 0,
-        "workflow_stage_label": humanize_campaign_workflow_stage(campaign.workflow_stage or 0),
-        "status": campaign.status,
-        "status_label": humanize_campaign_status(campaign.status),
-        "is_completed": FundraisingCampaign.IsCompleted(campaign),
-        "created_at": campaign.created_at.strftime("%Y-%m-%d %H:%M"),
-        "updated_at": campaign.updated_at.strftime("%Y-%m-%d %H:%M"),
-        "submitted_at": status_details["submitted_at"],
-        "published_at": status_details["published_at"],
-        "reviewed_at": status_details["reviewed_at"],
-        "rejection_reason": status_details["rejection_reason"],
-        "view_count": int(campaign.view_count or 0),
-        "shortlist_count": int(interest_details["shortlist_count"]),
-        "latest_viewed_at": exposure_details["latest_viewed_at"],
-        "latest_shortlisted_at": interest_details["latest_shortlisted_at"],
-        "recent_view_timestamps": exposure_details["recent_view_timestamps"],
-        "progress": progress_data,
-        "image_count": len(image_records),
-        "images": [
-            {
-                "id": record.id,
-                "url": build_campaign_image_url(record.image_path),
-            }
-            for record in image_records
-            if build_campaign_image_url(record.image_path)
-        ],
-        "image_urls": [
-            build_campaign_image_url(record.image_path)
-            for record in image_records
-            if build_campaign_image_url(record.image_path)
-        ],
-    }
+    return CampaignDetailSerializer.SerializeCampaignDetail(session, campaign)
 
 
 class CampaignController:
@@ -652,7 +660,7 @@ class CampaignController:
         campaign = FundraisingCampaign.GetCampaignDetails(session, campaign_id)
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found.")
-        return serialize_campaign_detail(session, campaign)
+        return CampaignDetailSerializer.SerializeCampaignDetail(session, campaign)
 
     @staticmethod
     def ValidateUpdatedInformation(title: str, category: str) -> tuple[str, str]:
@@ -1156,7 +1164,7 @@ class CampaignHistoryController:
         campaign = CompletedCampaignRecord.GetCampaignById(session, owner_id, campaign_id)
         if not campaign:
             raise HTTPException(status_code=404, detail="Completed campaign not found.")
-        return serialize_campaign_detail(session, campaign)
+        return CampaignDetailSerializer.SerializeCampaignDetail(session, campaign)
 
     @staticmethod
     def GetCampaignPerformance(
